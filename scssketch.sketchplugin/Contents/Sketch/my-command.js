@@ -100,9 +100,29 @@ var exports =
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+var sketch = __webpack_require__(/*! sketch */ "sketch");
+
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  context.document.showMessage("It's alive 🙌");
+  // const document = sketch.toJSON(context.document)
+  var Documents = sketch.getDocument();
+  context.document.showMessage(documents); // Document.open("document.json", (err, document) => {
+  //   debugger
+  //   if (err) {
+  //   } else {
+  //   }
+  // })
 });
+
+/***/ }),
+
+/***/ "sketch":
+/*!*************************!*\
+  !*** external "sketch" ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("sketch");
 
 /***/ })
 
