@@ -42,5 +42,18 @@ export default function(context) {
     var layerStyle = sharedStyles.objects().objectAtIndex(i);
     separateColorAndShadow(layerStyle)
   }
-  console.log(scss)
+
+  function writeToFile() {
+    var scssFile = ''
+
+  }
+
+  function writeColors(scss) {
+    return scss.colors
+  }
+
+  function writeShadows(scss) {
+    scss.shadows
+  }
+  console.log(writeColors(scss) + "/n")
 }

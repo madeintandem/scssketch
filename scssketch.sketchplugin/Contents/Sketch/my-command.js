@@ -143,7 +143,19 @@ __webpack_require__.r(__webpack_exports__);
     separateColorAndShadow(layerStyle);
   }
 
-  console.log(scss);
+  function writeToFile() {
+    var scssFile = '';
+  }
+
+  function writeColors(scss) {
+    return scss.colors;
+  }
+
+  function writeShadows(scss) {
+    scss.shadows;
+  }
+
+  console.log(writeColors(scss) + "/n");
 });
 
 /***/ })
