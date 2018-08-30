@@ -1,6 +1,7 @@
 export default function(context) {
-  const sketch = require('sketch')
-  var document = sketch.getSelectedDocument()
+  // const sketch = require('sketch')
+  const sketch = context.api()
+  var document = sketch.selectedDocument
 
   var sharedStyles = document.sketchObject.documentData().layerStyles()
 
@@ -38,7 +39,7 @@ export default function(context) {
 
   for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
 
-    layerStyle = sharedStyles.objects().objectAtIndex(i);
+    var layerStyle = sharedStyles.objects().objectAtIndex(i);
     separateColorAndShadow(layerStyle)
   }
   console.log(scss)

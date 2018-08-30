@@ -100,10 +100,10 @@ var exports =
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-var sketch = __webpack_require__(/*! sketch */ "sketch");
-
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var document = sketch.getSelectedDocument();
+  // const sketch = require('sketch')
+  var sketch = context.api();
+  var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
   var scss = {
     colors: [],
@@ -139,23 +139,12 @@ var sketch = __webpack_require__(/*! sketch */ "sketch");
   }
 
   for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
-    layerStyle = sharedStyles.objects().objectAtIndex(i);
+    var layerStyle = sharedStyles.objects().objectAtIndex(i);
     separateColorAndShadow(layerStyle);
   }
 
-  context.document.showMessage('scss');
+  console.log(scss);
 });
-
-/***/ }),
-
-/***/ "sketch":
-/*!*************************!*\
-  !*** external "sketch" ***!
-  \*************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = require("sketch");
 
 /***/ })
 
