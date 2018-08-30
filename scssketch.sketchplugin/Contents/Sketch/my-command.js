@@ -105,21 +105,45 @@ var sketch = __webpack_require__(/*! sketch */ "sketch");
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
   var document = sketch.getSelectedDocument();
   var sharedStyles = document.sketchObject.documentData().layerStyles();
+  var scss = {
+    colors: [],
+    shadows: []
+  };
 
   function separateColorAndShadow(style) {
     if (String(style.name()).charAt(0) == '[') {
-      context.document.showMessage("color");
+      addColor(style);
     } else {
-      context.document.showMessage("shadow");
+      addShadow(style);
     }
+  }
+
+  function addColor(style) {
+    var name = String(style.name()).split(' ').pop().concat('_color');
+    var hex = "#" + layerStyle.value().firstEnabledFill().color().immutableModelObject().hexValue();
+    var tmp = {};
+    tmp[name] = hex;
+    scss.colors.push(tmp);
+  }
+
+  function addShadow(style) {
+    var name = String(style.name()).replace(' ', '_');
+    var tmp = {};
+    tmp[name] = {
+      offsetX: style.value().firstEnabledShadow().offsetX(),
+      offsetY: style.value().firstEnabledShadow().offsetY(),
+      blurRadius: style.value().firstEnabledShadow().blurRadius(),
+      color: style.value().firstEnabledShadow().color()
+    };
+    scss.shadows.push(tmp);
   }
 
   for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
     layerStyle = sharedStyles.objects().objectAtIndex(i);
-    separateColorAndShadow(layerStyle); //var colorName = String(layerStyle.name());
-    //var colorHex = "#" + layerStyle.value().firstEnabledFill().color().immutableModelObject().hexValue();
-    //console.log(colorName + " " + colorHex)
+    separateColorAndShadow(layerStyle);
   }
+
+  context.document.showMessage('scss');
 });
 
 /***/ }),

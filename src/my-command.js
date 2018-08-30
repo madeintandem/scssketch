@@ -1,5 +1,5 @@
 export default function(context) {
-  var sketch = require('sketch')
+  const sketch = require('sketch')
   var document = sketch.getSelectedDocument()
 
   var sharedStyles = document.sketchObject.documentData().layerStyles()
@@ -26,9 +26,13 @@ export default function(context) {
 
   function addShadow(style) {
     let name = String(style.name()).replace(' ', '_')
-    let hex = "#" + layerStyle.value().firstEnabledFill().color().immutableModelObject().hexValue()
     var tmp = {}
-    tmp[name] = hex
+    tmp[name] = {
+      offsetX: style.value().firstEnabledShadow().offsetX(),
+      offsetY: style.value().firstEnabledShadow().offsetY(),
+      blurRadius: style.value().firstEnabledShadow().blurRadius(),
+      color: style.value().firstEnabledShadow().color(),
+    }
     scss.shadows.push(tmp)
   }
 
@@ -37,7 +41,5 @@ export default function(context) {
     layerStyle = sharedStyles.objects().objectAtIndex(i);
     separateColorAndShadow(layerStyle)
   }
-
   console.log(scss)
-  }
 }
