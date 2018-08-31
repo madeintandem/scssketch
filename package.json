@@ -22,5 +22,7 @@
     "@skpm/builder": "^0.5.2"
   },
   "author": "Max Oppenheimer <max.oppenheimer@devmynd.com> and Sarah Aslanifar <sarah.aslanifar@devmynd.com>",
-  "dependencies": {}
+  "dependencies": {
+    "lodash": "^4.17.10"
+  }
 }

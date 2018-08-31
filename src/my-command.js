@@ -6,6 +6,7 @@ export default function(context) {
   
 
   const layerStyleJson = layerStyles.parse(sharedStyles)
+  const layerStyleSheet = layerStyles.write()
 
-  // console.log(layerStyleJson)
+  console.log(layerStyleSheet)
 }
