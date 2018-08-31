@@ -17301,7 +17301,11 @@ var layerStyleMap = {
 };
 module.exports = {
   parse: function parse(sharedStyles) {
-    _.forEach(sharedStyles.objects(), function (style) {
+    var styles = _.orderBy(sharedStyles.objects(), [function (style) {
+      return style.name();
+    }], ["desc"]);
+
+    _.forEach(styles, function (style) {
       String(style.name()).charAt(0) == "[" ? addColor(style) : addShadow(style);
     });
 
@@ -17333,7 +17337,7 @@ function constructShadowValue(style) {
   var offsetY = style.firstEnabledShadow().offsetY();
   var blurRadius = style.firstEnabledShadow().blurRadius();
   var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
-  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ";");
+  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
 }
 
 function writeColors() {

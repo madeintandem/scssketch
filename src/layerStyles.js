@@ -6,7 +6,8 @@ var layerStyleMap = {
 
 module.exports = {
   parse: function (sharedStyles) {    
-    _.forEach(sharedStyles.objects(), function(style){
+    var styles = _.sortBy(sharedStyles.objects(), [style => style.name()], ["desc"])
+    _.forEach(styles, function(style){
         String(style.name()).charAt(0) == "[" ? addColor(style) : addShadow(style)
     })
     
@@ -40,7 +41,7 @@ function constructShadowValue(style) {
   var blurRadius = style.firstEnabledShadow().blurRadius()
   var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "")
   
-  return `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba};`
+  return `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}`
 }
 
 function writeColors() {
