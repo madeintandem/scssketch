@@ -17264,6 +17264,28 @@ module.exports = function(module) {
 
 /***/ }),
 
+/***/ "./src/export-to-sass.js":
+/*!*******************************!*\
+  !*** ./src/export-to-sass.js ***!
+  \*******************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (function (context) {
+  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
+
+  var sketch = context.api();
+  var document = sketch.selectedDocument;
+  var sharedStyles = document.sketchObject.documentData().layerStyles();
+  var layerStyleJson = layerStyles.parse(sharedStyles);
+  var layerStyleSheet = layerStyles.write();
+  console.log(layerStyleSheet);
+});
+
+/***/ }),
+
 /***/ "./src/layerStyles.js":
 /*!****************************!*\
   !*** ./src/layerStyles.js ***!
@@ -17338,28 +17360,6 @@ function writeShadows() {
 
   return styles;
 }
-
-/***/ }),
-
-/***/ "./src/export-to-sass.js":
-/*!***************************!*\
-  !*** ./src/export-to-sass.js ***!
-  \***************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
-
-  var sketch = context.api();
-  var document = sketch.selectedDocument;
-  var sharedStyles = document.sketchObject.documentData().layerStyles();
-  var layerStyleJson = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.write();
-  console.log(layerStyleSheet);
-});
 
 /***/ })
 
