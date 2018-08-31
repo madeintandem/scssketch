@@ -17301,15 +17301,9 @@ var layerStyleMap = {
 };
 module.exports = {
   parse: function parse(sharedStyles) {
-    for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
-      var style = sharedStyles.objects().objectAtIndex(i);
-
-      if (String(style.name()).charAt(0) == "[") {
-        addColor(style);
-      } else {
-        addShadow(style);
-      }
-    }
+    _.forEach(sharedStyles.objects(), function (style) {
+      String(style.name()).charAt(0) == "[" ? addColor(style) : addShadow(style);
+    });
 
     return layerStyleMap;
   },
@@ -17329,12 +17323,17 @@ function addColor(style) {
 function addShadow(style) {
   tmp = {
     name: String(style.name()).replace(" ", "_"),
-    offsetX: style.value().firstEnabledShadow().offsetX(),
-    offsetY: style.value().firstEnabledShadow().offsetY(),
-    blurRadius: style.value().firstEnabledShadow().blurRadius(),
-    rgba: style.value().firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "")
+    value: constructShadowValue(style.value())
   };
   layerStyleMap.shadows.push(tmp);
+}
+
+function constructShadowValue(style) {
+  var offsetX = style.firstEnabledShadow().offsetX();
+  var offsetY = style.firstEnabledShadow().offsetY();
+  var blurRadius = style.firstEnabledShadow().blurRadius();
+  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
+  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ";");
 }
 
 function writeColors() {
@@ -17351,11 +17350,7 @@ function writeShadows() {
   var styles = "";
 
   _.forEach(layerStyleMap.shadows, function (shadow) {
-    var offsetX = "".concat(shadow.offsetX, "px");
-    var offsetY = "".concat(shadow.offsetY, "px");
-    var blurRadius = "".concat(shadow.blurRadius, "px");
-    var rgba = "rgba".concat(shadow.rgba);
-    styles = styles.concat("$".concat(shadow.name, ": ").concat(offsetX, " ").concat(offsetY, " ").concat(blurRadius, " ").concat(rgba, ";\n"));
+    styles = styles.concat("$".concat(shadow.name, ": ").concat(shadow.value, ";\n"));
   });
 
   return styles;
