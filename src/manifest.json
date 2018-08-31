@@ -4,15 +4,15 @@
   "icon": "icon.png",
   "commands": [
     {
-      "name": "my-command",
-      "identifier": "my-command-identifier",
-      "script": "./my-command.js"
+      "name": "export to sass",
+      "identifier": "export-to-sass-identifier",
+      "script": "./export-to-sass.js"
     }
   ],
   "menu": {
     "title": "scssketch",
     "items": [
-      "my-command-identifier"
+      "export-to-sass-identifier"
     ]
   }
 }

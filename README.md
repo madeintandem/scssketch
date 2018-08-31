@@ -8,24 +8,32 @@ Install the dependencies
 
 ```bash
 npm install
+or
+yarn install
 ```
 
 Once the installation is done, you can run some commands inside the project folder:
 
 ```bash
 npm run build
+or
+yarn build
 ```
 
 To watch for changes:
 
 ```bash
 npm run watch
+or 
+yarn watch
 ```
 
 Additionally, if you wish to run the plugin every time it is built:
 
 ```bash
 npm run start
+or
+yarn run start
 ```
 
 ## Custom Configuration
