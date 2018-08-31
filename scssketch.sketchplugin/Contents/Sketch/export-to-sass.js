@@ -17274,8 +17274,9 @@ module.exports = function(module) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js"); // const layerTextStyles = require("./layerTextStyles");
+  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
 
+  var layerTextStyles = __webpack_require__(/*! ./layerTextStyles */ "./src/layerTextStyles.js");
 
   var sketch = context.api();
   var document = sketch.selectedDocument;
@@ -17283,9 +17284,9 @@ __webpack_require__.r(__webpack_exports__);
   var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
   var layerStyleMap = layerStyles.parse(sharedStyles);
   var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
-  console.log(layerStyleSheet); // const layerTextStyleJson = layerStyles.parse(sharedStyles)
-  // const layerStyleSheet = layerStyles.writeSass()
-  // console.log(layerStyleSheet)
+  console.log(layerStyleSheet); // const layerTextStyleMap = layerStyles.parse(sharedTextStyles)
+  // const layerTextStyleSheet = layerStyles.writeSass(layerTextStyleMap)
+  // console.log(layerTextStyleSheet)
 });
 
 /***/ }),
@@ -17369,6 +17370,24 @@ function writeShadows(shadows) {
 
   return styles;
 }
+
+/***/ }),
+
+/***/ "./src/layerTextStyles.js":
+/*!********************************!*\
+  !*** ./src/layerTextStyles.js ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = {
+  parse: function parse(sharedTextStyles) {
+    return {};
+  },
+  writeSass: function writeSass(layerTextStyleMap) {
+    return "";
+  }
+};
 
 /***/ })
 
