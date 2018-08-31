@@ -95,30 +95,28 @@ var exports =
 /*!****************************!*\
   !*** ./src/layerStyles.js ***!
   \****************************/
-/*! exports provided: layerStyle */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/*! no static exports found */
+/***/ (function(module, exports) {
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "layerStyle", function() { return layerStyle; });
 var layerStyleMap = {
   colors: [],
   shadows: []
 };
-function layerStyle(sharedStyles) {
-  for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
-    var style = sharedStyles.objects().objectAtIndex(i);
-    readLayerStyles(style);
-  }
-}
+module.exports = {
+  parse: function parse(sharedStyles) {
+    for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
+      var style = sharedStyles.objects().objectAtIndex(i);
 
-function readLayerStyles(style) {
-  if (String(style.name()).charAt(0) == '[') {
-    addColor(style);
-  } else {
-    addShadow(style);
+      if (String(style.name()).charAt(0) == '[') {
+        addColor(style);
+      } else {
+        addShadow(style);
+      }
+    }
+
+    return layerStyleMap;
   }
-}
+};
 
 function addColor(style) {
   var name = String(style.name()).split(' ').pop().concat('_color');
@@ -131,11 +129,12 @@ function addColor(style) {
 function addShadow(style) {
   var name = String(style.name()).replace(' ', '_');
   var tmp = {};
+  var color = style.value().firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
   tmp[name] = {
     offsetX: style.value().firstEnabledShadow().offsetX(),
     offsetY: style.value().firstEnabledShadow().offsetY(),
     blurRadius: style.value().firstEnabledShadow().blurRadius(),
-    color: style.value().firstEnabledShadow().color()
+    rgba: "rbga".concat(color)
   };
   layerStyleMap.shadows.push(tmp);
 }
@@ -151,28 +150,13 @@ function addShadow(style) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _layerStyles_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./layerStyles.js */ "./src/layerStyles.js");
-
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  // const sketch = require('sketch')
+  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
+
   var sketch = context.api();
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
-  var layerStyleJson = Object(_layerStyles_js__WEBPACK_IMPORTED_MODULE_0__["layerStyle"])(sharedStyles); // 
-  // function writeToFile() {
-  //   var scssFile = ''
-  // 
-  // }
-  // 
-  // function writeColors(scss) {
-  //   return scss.colors
-  // }
-  // 
-  // function writeShadows(scss) {
-  //   scss.shadows
-  // }
-
-  console.log("all done!");
+  var layerStyleJson = layerStyles.parse(sharedStyles); // console.log(layerStyleJson)
 });
 
 /***/ })

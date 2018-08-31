@@ -3,19 +3,17 @@ var layerStyleMap = {
   shadows: []
 }
 
-export function layerStyle(sharedStyles){
-  for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
-  
-    var style = sharedStyles.objects().objectAtIndex(i);
-    readLayerStyles(style)
-  }
-}
-
-function readLayerStyles(style) {
-  if (String(style.name()).charAt(0) == '[') {
-    addColor(style)
-  } else {
-    addShadow(style)
+module.exports = {
+  parse: function (sharedStyles) {
+    for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
+      var style = sharedStyles.objects().objectAtIndex(i);
+      if (String(style.name()).charAt(0) == '[') {
+        addColor(style)
+      } else {
+        addShadow(style)
+      }
+    }    
+    return layerStyleMap
   }
 }
 
@@ -30,11 +28,12 @@ function addColor(style) {
 function addShadow(style) {
   let name = String(style.name()).replace(' ', '_')
   var tmp = {}
+  var color = style.value().firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "")
   tmp[name] = {
     offsetX: style.value().firstEnabledShadow().offsetX(),
     offsetY: style.value().firstEnabledShadow().offsetY(),
     blurRadius: style.value().firstEnabledShadow().blurRadius(),
-    color: style.value().firstEnabledShadow().color(),
+    rgba: "rbga".concat(color)
   }
   layerStyleMap.shadows.push(tmp)
 }

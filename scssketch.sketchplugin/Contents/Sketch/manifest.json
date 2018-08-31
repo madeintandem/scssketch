@@ -19,7 +19,5 @@
   "name": "scssketch",
   "identifier": "scssketch",
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml",
-  "author": "Max Oppenheimer",
-  "authorEmail": "max.oppenheimer@devmynd.com"
+  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
 }

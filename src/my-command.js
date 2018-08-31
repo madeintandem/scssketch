@@ -1,25 +1,11 @@
-import {layerStyle} from "./layerStyles.js";
-
 export default function(context) {
-  // const sketch = require('sketch')
+  const layerStyles = require("./layerStyles");
   const sketch = context.api()
   const document = sketch.selectedDocument
   const sharedStyles = document.sketchObject.documentData().layerStyles()
+  
 
-  const layerStyleJson = layerStyle(sharedStyles)
+  const layerStyleJson = layerStyles.parse(sharedStyles)
 
-  // 
-  // function writeToFile() {
-  //   var scssFile = ''
-  // 
-  // }
-  // 
-  // function writeColors(scss) {
-  //   return scss.colors
-  // }
-  // 
-  // function writeShadows(scss) {
-  //   scss.shadows
-  // }
-  console.log("all done!")
+  // console.log(layerStyleJson)
 }
