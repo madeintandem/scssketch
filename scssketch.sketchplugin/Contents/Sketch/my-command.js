@@ -91,6 +91,57 @@ var exports =
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/layerStyles.js":
+/*!****************************!*\
+  !*** ./src/layerStyles.js ***!
+  \****************************/
+/*! exports provided: layerStyle */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "layerStyle", function() { return layerStyle; });
+var layerStyleMap = {
+  colors: [],
+  shadows: []
+};
+function layerStyle(sharedStyles) {
+  for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
+    var style = sharedStyles.objects().objectAtIndex(i);
+    readLayerStyles(style);
+  }
+}
+
+function readLayerStyles(style) {
+  if (String(style.name()).charAt(0) == '[') {
+    addColor(style);
+  } else {
+    addShadow(style);
+  }
+}
+
+function addColor(style) {
+  var name = String(style.name()).split(' ').pop().concat('_color');
+  var hex = "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue();
+  var tmp = {};
+  tmp[name] = hex;
+  layerStyleMap.colors.push(tmp);
+}
+
+function addShadow(style) {
+  var name = String(style.name()).replace(' ', '_');
+  var tmp = {};
+  tmp[name] = {
+    offsetX: style.value().firstEnabledShadow().offsetX(),
+    offsetY: style.value().firstEnabledShadow().offsetY(),
+    blurRadius: style.value().firstEnabledShadow().blurRadius(),
+    color: style.value().firstEnabledShadow().color()
+  };
+  layerStyleMap.shadows.push(tmp);
+}
+
+/***/ }),
+
 /***/ "./src/my-command.js":
 /*!***************************!*\
   !*** ./src/my-command.js ***!
@@ -100,62 +151,28 @@ var exports =
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _layerStyles_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./layerStyles.js */ "./src/layerStyles.js");
+
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
   // const sketch = require('sketch')
   var sketch = context.api();
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
-  var scss = {
-    colors: [],
-    shadows: []
-  };
+  var layerStyleJson = Object(_layerStyles_js__WEBPACK_IMPORTED_MODULE_0__["layerStyle"])(sharedStyles); // 
+  // function writeToFile() {
+  //   var scssFile = ''
+  // 
+  // }
+  // 
+  // function writeColors(scss) {
+  //   return scss.colors
+  // }
+  // 
+  // function writeShadows(scss) {
+  //   scss.shadows
+  // }
 
-  function separateColorAndShadow(style) {
-    if (String(style.name()).charAt(0) == '[') {
-      addColor(style);
-    } else {
-      addShadow(style);
-    }
-  }
-
-  function addColor(style) {
-    var name = String(style.name()).split(' ').pop().concat('_color');
-    var hex = "#" + layerStyle.value().firstEnabledFill().color().immutableModelObject().hexValue();
-    var tmp = {};
-    tmp[name] = hex;
-    scss.colors.push(tmp);
-  }
-
-  function addShadow(style) {
-    var name = String(style.name()).replace(' ', '_');
-    var tmp = {};
-    tmp[name] = {
-      offsetX: style.value().firstEnabledShadow().offsetX(),
-      offsetY: style.value().firstEnabledShadow().offsetY(),
-      blurRadius: style.value().firstEnabledShadow().blurRadius(),
-      color: style.value().firstEnabledShadow().color()
-    };
-    scss.shadows.push(tmp);
-  }
-
-  for (var i = 0; i < sharedStyles.numberOfSharedStyles(); i++) {
-    var layerStyle = sharedStyles.objects().objectAtIndex(i);
-    separateColorAndShadow(layerStyle);
-  }
-
-  function writeToFile() {
-    var scssFile = '';
-  }
-
-  function writeColors(scss) {
-    return scss.colors;
-  }
-
-  function writeShadows(scss) {
-    scss.shadows;
-  }
-
-  console.log(writeColors(scss) + "/n");
+  console.log("all done!");
 });
 
 /***/ })
