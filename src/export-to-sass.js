@@ -1,12 +1,18 @@
 export default function(context) {
   const layerStyles = require("./layerStyles");
+  // const layerTextStyles = require("./layerTextStyles");
   const sketch = context.api()
   const document = sketch.selectedDocument
   const sharedStyles = document.sketchObject.documentData().layerStyles()
+  const sharedTextStyles = document.sketchObject.documentData().layerTextStyles()
   
 
-  const layerStyleJson = layerStyles.parse(sharedStyles)
-  const layerStyleSheet = layerStyles.writeSass()
-
+  const layerStyleMap = layerStyles.parse(sharedStyles)
+  const layerStyleSheet = layerStyles.writeSass(layerStyleMap)
   console.log(layerStyleSheet)
+  
+  // const layerTextStyleJson = layerStyles.parse(sharedStyles)
+  // const layerStyleSheet = layerStyles.writeSass()
+  // console.log(layerStyleSheet)
+  
 }

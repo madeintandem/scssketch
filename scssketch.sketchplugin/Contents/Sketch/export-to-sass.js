@@ -17274,14 +17274,18 @@ module.exports = function(module) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
+  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js"); // const layerTextStyles = require("./layerTextStyles");
+
 
   var sketch = context.api();
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
-  var layerStyleJson = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.writeSass();
-  console.log(layerStyleSheet);
+  var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
+  var layerStyleMap = layerStyles.parse(sharedStyles);
+  var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
+  console.log(layerStyleSheet); // const layerTextStyleJson = layerStyles.parse(sharedStyles)
+  // const layerStyleSheet = layerStyles.writeSass()
+  // console.log(layerStyleSheet)
 });
 
 /***/ }),
@@ -17295,41 +17299,47 @@ __webpack_require__.r(__webpack_exports__);
 
 var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
-var layerStyleMap = {
-  colors: [],
-  shadows: []
-};
 module.exports = {
   parse: function parse(sharedStyles) {
+    var colors = [];
+    var shadows = [];
+
     var styles = _.sortBy(sharedStyles.objects(), [function (style) {
       return style.name();
     }], ["desc"]);
 
     _.forEach(styles, function (style) {
-      String(style.name()).charAt(0) == "[" ? addColor(style) : addShadow(style);
+      if (String(style.name()).charAt(0) == "[") {
+        addColor(colors, style);
+      } else {
+        addShadow(shadows, style);
+      }
     });
 
-    return layerStyleMap;
+    return {
+      colors: colors,
+      shadows: shadows
+    };
   },
-  writeSass: function writeSass() {
-    return writeColors().concat(writeShadows());
+  writeSass: function writeSass(layerStyleMap) {
+    return writeColors(layerStyleMap.colors).concat(writeShadows(layerStyleMap.shadows));
   }
 };
 
-function addColor(style) {
+function addColor(colorsArray, style) {
   var tmp = {
     name: String(style.name()).split(" ").pop().concat("_color"),
     value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
   };
-  layerStyleMap.colors.push(tmp);
+  colorsArray.push(tmp);
 }
 
-function addShadow(style) {
+function addShadow(shadowsArray, style) {
   tmp = {
     name: String(style.name()).replace(" ", "_"),
     value: constructShadowValue(style.value())
   };
-  layerStyleMap.shadows.push(tmp);
+  shadowsArray.push(tmp);
 }
 
 function constructShadowValue(style) {
@@ -17340,20 +17350,20 @@ function constructShadowValue(style) {
   return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
 }
 
-function writeColors() {
+function writeColors(colors) {
   var styles = "";
 
-  _.forEach(layerStyleMap.colors, function (color) {
+  _.forEach(colors, function (color) {
     styles = styles.concat("$".concat(color.name, ": ").concat(color.value, ";\n"));
   });
 
   return styles;
 }
 
-function writeShadows() {
+function writeShadows(shadows) {
   var styles = "";
 
-  _.forEach(layerStyleMap.shadows, function (shadow) {
+  _.forEach(shadows, function (shadow) {
     styles = styles.concat("$".concat(shadow.name, ": ").concat(shadow.value, ";\n"));
   });
 
