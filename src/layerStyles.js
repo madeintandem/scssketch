@@ -14,7 +14,7 @@ module.exports = {
     return layerStyleMap
   },
   
-  write: function () {
+  writeSass: function () {
     return writeColors().concat(writeShadows())
   }
 }

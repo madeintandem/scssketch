@@ -17280,7 +17280,7 @@ __webpack_require__.r(__webpack_exports__);
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
   var layerStyleJson = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.write();
+  var layerStyleSheet = layerStyles.writeSass();
   console.log(layerStyleSheet);
 });
 
@@ -17301,7 +17301,7 @@ var layerStyleMap = {
 };
 module.exports = {
   parse: function parse(sharedStyles) {
-    var styles = _.orderBy(sharedStyles.objects(), [function (style) {
+    var styles = _.sortBy(sharedStyles.objects(), [function (style) {
       return style.name();
     }], ["desc"]);
 
@@ -17311,7 +17311,7 @@ module.exports = {
 
     return layerStyleMap;
   },
-  write: function write() {
+  writeSass: function writeSass() {
     return writeColors().concat(writeShadows());
   }
 };
