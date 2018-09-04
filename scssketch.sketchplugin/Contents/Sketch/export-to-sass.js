@@ -17283,10 +17283,10 @@ __webpack_require__.r(__webpack_exports__);
   var sharedStyles = document.sketchObject.documentData().layerStyles();
   var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
   var layerStyleMap = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
-  console.log(layerStyleSheet); // const layerTextStyleMap = layerStyles.parse(sharedTextStyles)
-  // const layerTextStyleSheet = layerStyles.writeSass(layerTextStyleMap)
-  // console.log(layerTextStyleSheet)
+  var layerStyleSheet = layerStyles.writeSass(layerStyleMap); // console.log(layerStyleSheet)
+
+  var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
+  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap); // console.log(layerTextStyleSheet)  
 });
 
 /***/ }),
@@ -17378,16 +17378,111 @@ function writeShadows(shadows) {
   !*** ./src/layerTextStyles.js ***!
   \********************************/
 /*! no static exports found */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
+
+var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
 module.exports = {
   parse: function parse(sharedTextStyles) {
-    return {};
+    var mobileStyles = _.filter(sharedTextStyles.objects(), function (style) {
+      return style.name().match(/\[M[\d|P]\]/);
+    });
+
+    var desktopStyles = _.filter(sharedTextStyles.objects(), function (style) {
+      return style.name().match(/\[D[\d|P]\]/);
+    });
+
+    var mobile = addMobile(mobileStyles);
+    var desktop = addDesktop(desktopStyles);
+    return {
+      mobile: mobile,
+      desktop: desktop
+    };
   },
   writeSass: function writeSass(layerTextStyleMap) {
-    return "";
+    var s = writeMobile(layerTextStyleMap.mobile).concat(writeDesktop(layerTextStyleMap.desktop));
+    console.log(s);
+    return s;
   }
 };
+
+function addMobile(mobileStyles) {
+  var mobile = [];
+
+  _.forEach(mobileStyles, function (style) {
+    var attributes = style.value().textStyle().attributes();
+    var tmp = {
+      name: style.name(),
+      font_family: attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute),
+      font_size: "".concat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute), "px"),
+      // font_weight: ,
+      line_height: "".concat(attributes.NSParagraphStyle.maximumLineHeight(), "px"),
+      margin: 0,
+      text_transform: attributes.MSAttributedStringTextTransformAttribute
+    };
+    mobile.push(tmp);
+  });
+
+  return mobile;
+}
+
+function addDesktop(desktopStyles) {
+  var desktop = [];
+
+  _.forEach(desktopStyles, function (style) {
+    var attributes = style.value().textStyle().attributes();
+    var tmp = {
+      name: style.name(),
+      font_size: "".concat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute), "px"),
+      line_height: "".concat(attributes.NSParagraphStyle.maximumLineHeight(), "px")
+    };
+    desktop.push(tmp);
+  });
+
+  return desktop;
+}
+
+function writeMobile(mobileStyles) {
+  var sass = "// --- MOBILE TYPE RAMP ---\n";
+
+  _.forEach(mobileStyles, function (style) {
+    sass += printStyleHeader(style.name);
+    sass += printStyle(style);
+    sass += "}\n\n";
+  });
+
+  return sass;
+}
+
+function writeDesktop(desktopStyles) {
+  var sass = "// --- DESKTOP TYPE RAMP ---\n";
+
+  _.forEach(desktopStyles, function (style) {
+    sass += printStyleHeader(style.name);
+    sass += printStyle(style);
+    sass += "}\n\n";
+  });
+
+  return sass;
+}
+
+function printStyle(style) {
+  var sass = "";
+
+  _.forEach(_.omit(style, ["name"]), function (value, key) {
+    sass += value ? "".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
+  });
+
+  return sass;
+}
+
+function printStyleHeader(name) {
+  var mixinName = _.lowerCase(name.substring(name.indexOf("["), name.indexOf("]"))).replace(" ", "");
+
+  var sass = "// ".concat(name, " \n");
+  sass += "@mixin ".concat(mixinName, "TextStyle {\n");
+  return sass;
+}
 
 /***/ })
 

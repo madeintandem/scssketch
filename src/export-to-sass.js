@@ -6,13 +6,11 @@ export default function(context) {
   const sharedStyles = document.sketchObject.documentData().layerStyles()
   const sharedTextStyles = document.sketchObject.documentData().layerTextStyles()
   
-
   const layerStyleMap = layerStyles.parse(sharedStyles)
   const layerStyleSheet = layerStyles.writeSass(layerStyleMap)
-  console.log(layerStyleSheet)
+  // console.log(layerStyleSheet)
   
-  // const layerTextStyleMap = layerStyles.parse(sharedTextStyles)
-  // const layerTextStyleSheet = layerStyles.writeSass(layerTextStyleMap)
-  // console.log(layerTextStyleSheet)
-  
+  const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
+  const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap)
+  // console.log(layerTextStyleSheet)  
 }
