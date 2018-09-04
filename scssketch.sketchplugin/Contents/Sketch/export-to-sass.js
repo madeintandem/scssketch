@@ -17276,12 +17276,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
   var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
 
+  var layerTextStyles = __webpack_require__(/*! ./layerTextStyles */ "./src/layerTextStyles.js");
+
   var sketch = context.api();
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
-  var layerStyleJson = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.writeSass();
-  console.log(layerStyleSheet);
+  var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
+  var layerStyleMap = layerStyles.parse(sharedStyles);
+  var layerStyleSheet = layerStyles.writeSass(layerStyleMap); // console.log(layerStyleSheet)
+
+  var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
+  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap); // console.log(layerTextStyleSheet)  
 });
 
 /***/ }),
@@ -17295,41 +17300,47 @@ __webpack_require__.r(__webpack_exports__);
 
 var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
-var layerStyleMap = {
-  colors: [],
-  shadows: []
-};
 module.exports = {
   parse: function parse(sharedStyles) {
+    var colors = [];
+    var shadows = [];
+
     var styles = _.sortBy(sharedStyles.objects(), [function (style) {
       return style.name();
     }], ["desc"]);
 
     _.forEach(styles, function (style) {
-      String(style.name()).charAt(0) == "[" ? addColor(style) : addShadow(style);
+      if (String(style.name()).charAt(0) == "[") {
+        addColor(colors, style);
+      } else {
+        addShadow(shadows, style);
+      }
     });
 
-    return layerStyleMap;
+    return {
+      colors: colors,
+      shadows: shadows
+    };
   },
-  writeSass: function writeSass() {
-    return writeColors().concat(writeShadows());
+  writeSass: function writeSass(layerStyleMap) {
+    return writeColors(layerStyleMap.colors).concat(writeShadows(layerStyleMap.shadows));
   }
 };
 
-function addColor(style) {
+function addColor(colorsArray, style) {
   var tmp = {
     name: String(style.name()).split(" ").pop().concat("_color"),
     value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
   };
-  layerStyleMap.colors.push(tmp);
+  colorsArray.push(tmp);
 }
 
-function addShadow(style) {
+function addShadow(shadowsArray, style) {
   tmp = {
     name: String(style.name()).replace(" ", "_"),
     value: constructShadowValue(style.value())
   };
-  layerStyleMap.shadows.push(tmp);
+  shadowsArray.push(tmp);
 }
 
 function constructShadowValue(style) {
@@ -17340,24 +17351,137 @@ function constructShadowValue(style) {
   return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
 }
 
-function writeColors() {
+function writeColors(colors) {
   var styles = "";
 
-  _.forEach(layerStyleMap.colors, function (color) {
+  _.forEach(colors, function (color) {
     styles = styles.concat("$".concat(color.name, ": ").concat(color.value, ";\n"));
   });
 
   return styles;
 }
 
-function writeShadows() {
+function writeShadows(shadows) {
   var styles = "";
 
-  _.forEach(layerStyleMap.shadows, function (shadow) {
+  _.forEach(shadows, function (shadow) {
     styles = styles.concat("$".concat(shadow.name, ": ").concat(shadow.value, ";\n"));
   });
 
   return styles;
+}
+
+/***/ }),
+
+/***/ "./src/layerTextStyles.js":
+/*!********************************!*\
+  !*** ./src/layerTextStyles.js ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
+
+module.exports = {
+  parse: function parse(sharedTextStyles) {
+    var mobileStyles = _.filter(sharedTextStyles.objects(), function (style) {
+      return style.name().match(/\[M[\d|P]\]/);
+    });
+
+    var desktopStyles = _.filter(sharedTextStyles.objects(), function (style) {
+      return style.name().match(/\[D[\d|P]\]/);
+    });
+
+    var mobile = addMobile(mobileStyles);
+    var desktop = addDesktop(desktopStyles);
+    return {
+      mobile: mobile,
+      desktop: desktop
+    };
+  },
+  writeSass: function writeSass(layerTextStyleMap) {
+    var s = writeMobile(layerTextStyleMap.mobile).concat(writeDesktop(layerTextStyleMap.desktop));
+    console.log(s);
+    return s;
+  }
+};
+
+function addMobile(mobileStyles) {
+  var mobile = [];
+
+  _.forEach(mobileStyles, function (style) {
+    var attributes = style.value().textStyle().attributes();
+    var tmp = {
+      name: style.name(),
+      font_family: attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute),
+      font_size: "".concat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute), "px"),
+      // font_weight: ,
+      line_height: "".concat(attributes.NSParagraphStyle.maximumLineHeight(), "px"),
+      margin: 0,
+      text_transform: attributes.MSAttributedStringTextTransformAttribute
+    };
+    mobile.push(tmp);
+  });
+
+  return mobile;
+}
+
+function addDesktop(desktopStyles) {
+  var desktop = [];
+
+  _.forEach(desktopStyles, function (style) {
+    var attributes = style.value().textStyle().attributes();
+    var tmp = {
+      name: style.name(),
+      font_size: "".concat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute), "px"),
+      line_height: "".concat(attributes.NSParagraphStyle.maximumLineHeight(), "px")
+    };
+    desktop.push(tmp);
+  });
+
+  return desktop;
+}
+
+function writeMobile(mobileStyles) {
+  var sass = "// --- MOBILE TYPE RAMP ---\n";
+
+  _.forEach(mobileStyles, function (style) {
+    sass += printStyleHeader(style.name);
+    sass += printStyle(style);
+    sass += "}\n\n";
+  });
+
+  return sass;
+}
+
+function writeDesktop(desktopStyles) {
+  var sass = "// --- DESKTOP TYPE RAMP ---\n";
+
+  _.forEach(desktopStyles, function (style) {
+    sass += printStyleHeader(style.name);
+    sass += printStyle(style);
+    sass += "}\n\n";
+  });
+
+  return sass;
+}
+
+function printStyle(style) {
+  var sass = "";
+
+  _.forEach(_.omit(style, ["name"]), function (value, key) {
+    sass += value ? "".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
+  });
+
+  return sass;
+}
+
+function printStyleHeader(name) {
+  var mixinName = _.lowerCase(name.substring(name.indexOf("["), name.indexOf("]"))).replace(" ", "");
+
+  var sass = "// ".concat(name, " \n");
+  sass += "@mixin ".concat(mixinName, "TextStyle {\n");
+  return sass;
 }
 
 /***/ })
