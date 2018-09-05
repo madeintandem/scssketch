@@ -98,17 +98,13 @@ var exports =
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var sketch = context.api();
-var document = sketch.selectedDocument;
+var sketch;
 var sharedStyles;
 var doc;
 
 function initVars(context) {
-  // const document = sketch.selectedDocument
-  // const sharedStyles = document.sketchObject.documentData().layerStyles()
-  // doc = document.sketchObject;
-  doc = sketch.selectedDocument; // sharedStyles = doc.documentData().layerTextStyles();
-
+  sketch = context.api();
+  doc = sketch.selectedDocument;
   sharedStyles = document.sketchObject.documentData().layerStyles();
 } // Here are some options that I'm hard-coding for now
 

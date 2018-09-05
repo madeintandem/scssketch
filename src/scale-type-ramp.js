@@ -1,14 +1,10 @@
-const sketch = context.api();
-const document = sketch.selectedDocument;
+var sketch;
 var sharedStyles;
 var doc;
 
 function initVars(context) {
-  // const document = sketch.selectedDocument
-  // const sharedStyles = document.sketchObject.documentData().layerStyles()
-  // doc = document.sketchObject;
+  sketch = context.api();
   doc = sketch.selectedDocument;
-  // sharedStyles = doc.documentData().layerTextStyles();
   sharedStyles = document.sketchObject.documentData().layerStyles();
 }
 
