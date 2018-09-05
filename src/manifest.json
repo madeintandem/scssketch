@@ -7,12 +7,18 @@
       "name": "export to sass",
       "identifier": "export-to-sass-identifier",
       "script": "./export-to-sass.js"
+    },    
+    {
+      "name": "resize",
+      "identifier": "resize-identifier",
+      "script": "./resize.js"
     }
   ],
   "menu": {
     "title": "scssketch",
     "items": [
-      "export-to-sass-identifier"
+      "export-to-sass-identifier",
+      "resize-identifier"
     ]
   }
 }
