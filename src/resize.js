@@ -1,20 +1,20 @@
 const sketch = context.api();
 const document = sketch.selectedDocument;
-var sharedStyles = document.sketchObject.documentData().layerTextStyles()
-var typeStyles = sharedStyles.objects();
-
+var sharedStyles;
 var doc;
 
-
 function initVars(context) {
-  doc = document.sketchObject;
-  sharedStyles = doc.documentData().layerTextStyles();
+  // const document = sketch.selectedDocument
+  // const sharedStyles = document.sketchObject.documentData().layerStyles()
+  // doc = document.sketchObject;
+  doc = sketch.selectedDocument;
+  // sharedStyles = doc.documentData().layerTextStyles();
+  sharedStyles = document.sketchObject.documentData().layerStyles();
 }
 
-
 // Here are some options that I'm hard-coding for now
-var numberOfTextStyles = 5; // This does not include paragraph styles
-var numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller than the base paragraph size
+const numberOfTextStyles = 5; // This does not include paragraph styles
+const numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller than the base paragraph size
 
 // THIS IS THE MEAT OF THIS THING
 // ---------------------------------------------------------------------------
@@ -24,7 +24,6 @@ var calculateType = function(options) {
   var lineHeightFactor = parseFloat(options.lineHeightFactor);
   var scaleFactor = parseFloat(options.scaleFactor);
  
-  
   // We need a base unit for line heights.
   // We will be reusing this sucker a lot in annoyingly complicated ways which I will try to describe later.
   // baseLineHeight is the baseFontSize times the lineHeightFactor, rounded to the nearest integer.
@@ -78,7 +77,6 @@ var calculateType = function(options) {
   styles.push(paragraphStyles)
   // return the array
   return styles;
-  
 }
 
 // Some additional notes:
@@ -86,8 +84,6 @@ var calculateType = function(options) {
 // The plugin will need to be able to apply different styles to desktop and mobile.
 // My initial thoughts would be to show six inputs, then run through the function twice
 // and apply the styles to the different type styles separately.
-
-
 function findAndGetType (options) {
   // Get the necessary vars from the options passed in
   var baseFontSize = options.baseFontSize;
@@ -112,8 +108,6 @@ function findAndGetType (options) {
 
 // Let's build a dialog box for inputs
 
-const app = $.NSApplication("sharedApplication");
-
 var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 function createWindow () {
   var alert = COSAlertWindow.new();
@@ -131,29 +125,30 @@ function createWindow () {
   var view = NSView.alloc().initWithFrame(NSMakeRect(0, 0, viewWidth, viewHeight));
   alert.addAccessoryView(view);
 
+  var alloc = NSTextField.alloc();
   // Creating the inputs
-  var desktopTypeRampLabel = NSTextField.alloc().initWithFrame(NSMakeRect(0, viewHeight - 70, viewWidth, 70));
+  var desktopTypeRampLabel = alloc.initWithFrame(NSMakeRect(0, viewHeight - 70, viewWidth, 70));
 
-  dFontSize = NSTextField.alloc().initWithFrame(NSMakeRect(10, viewHeight - 60, (viewWidth/3) - 20, 20));
-  var dFontSizeLabel = NSTextField.alloc().initWithFrame(NSMakeRect(10, viewHeight - 40, (viewWidth/3) - 20, 20));
+  dFontSize = alloc.initWithFrame(NSMakeRect(10, viewHeight - 60, (viewWidth/3) - 20, 20));
+  var dFontSizeLabel = alloc.initWithFrame(NSMakeRect(10, viewHeight - 40, (viewWidth/3) - 20, 20));
 
-  dLineHeight = NSTextField.alloc().initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 60, (viewWidth/3) - 20, 20));
-  var dLineHeightLabel = NSTextField.alloc().initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 40, (viewWidth/3) - 20, 20));
+  dLineHeight = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 60, (viewWidth/3) - 20, 20));
+  var dLineHeightLabel = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 40, (viewWidth/3) - 20, 20));
 
-  dScaleFactor = NSTextField.alloc().initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 60, (viewWidth/3) - 20, 20));
-  var dScaleFactorLabel = NSTextField.alloc().initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 40, (viewWidth/3) - 20, 20));
+  dScaleFactor = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 60, (viewWidth/3) - 20, 20));
+  var dScaleFactorLabel = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 40, (viewWidth/3) - 20, 20));
 
 
-  var mobileTypeRampLabel = NSTextField.alloc().initWithFrame(NSMakeRect(0, viewHeight -150, viewWidth, 70));
+  var mobileTypeRampLabel = alloc.initWithFrame(NSMakeRect(0, viewHeight -150, viewWidth, 70));
   // Creating the inputs
-  mFontSize = NSTextField.alloc().initWithFrame(NSMakeRect(10, viewHeight - 140, (viewWidth/3) - 20, 20));
-  var mFontSizeLabel = NSTextField.alloc().initWithFrame(NSMakeRect(10, viewHeight - 120, (viewWidth/3) - 20, 20));
+  mFontSize = alloc.initWithFrame(NSMakeRect(10, viewHeight - 140, (viewWidth/3) - 20, 20));
+  var mFontSizeLabel = alloc.initWithFrame(NSMakeRect(10, viewHeight - 120, (viewWidth/3) - 20, 20));
 
-  mLineHeight = NSTextField.alloc().initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 140, (viewWidth/3) - 20, 20));
-  var mLineHeightLabel = NSTextField.alloc().initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 120, (viewWidth/3) - 20, 20));
+  mLineHeight = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 140, (viewWidth/3) - 20, 20));
+  var mLineHeightLabel = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 120, (viewWidth/3) - 20, 20));
 
-  mScaleFactor = NSTextField.alloc().initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 140, (viewWidth/3) - 20, 20));
-  var mScaleFactorLabel = NSTextField.alloc().initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 120, (viewWidth/3) - 20, 20));
+  mScaleFactor = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 140, (viewWidth/3) - 20, 20));
+  var mScaleFactorLabel = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 120, (viewWidth/3) - 20, 20));
 
 
   desktopTypeRampLabel.setStringValue("Desktop Type Ramp");
@@ -179,7 +174,6 @@ function createWindow () {
   dScaleFactorLabel.setEditable(false);
   dScaleFactorLabel.setBezeled(false);
   dScaleFactorLabel.setDrawsBackground(false);
-
 
   mobileTypeRampLabel.setStringValue("Mobile Type Ramp");
   mobileTypeRampLabel.setSelectable(false);
@@ -222,11 +216,9 @@ function createWindow () {
   view.addSubview(mLineHeight);
   view.addSubview(mScaleFactor);
 
-
   // Show the dialog
   return [alert]
 }
-
 
 var findLayersMatchingPredicate_inContainer_filterByType = function(context, predicate, container, layerType) {
     var scope;
@@ -401,8 +393,7 @@ function setTypeStyle (style) {
   var underline = style.underline || 0;
 
   var rectTextFrame = NSMakeRect(0, 0, 250, 50);
-  const alloc = $.MSTextLayer("alloc");
-  var newText = [[alloc] initWithFrame:rectTextFrame];
+  var newText = doc.MSTextLayer().initWithFrame(rectTextFrame);
 
   var color = MSColor.colorWithRed_green_blue_alpha(red, green, blue, alpha);
 
@@ -418,8 +409,8 @@ function setTypeStyle (style) {
   }
 
   newText.textAlignment = align;
-  [newText setCharacterSpacing: spacing];
-  [newText setLineHeight: lineHeight];
+  newText.setCharacterSpacing(spacing);
+  newText.setLineHeight(lineHeight);
   newText.addAttribute_value("MSAttributedStringTextTransformAttribute", textTransform)
 
   var paragraphStyle = newText.paragraphStyle();
@@ -447,7 +438,8 @@ function updateTypeStyles(styleMap, desktopRamp) {
       lineHeight: calculatedStyle.lineHeight
     }
     console.log(changes)
-    typeStyles.forEach(function(documentStyle){
+
+    sharedStyles.objects().forEach((documentStyle) => {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
         var style = getTextStyleAsJson(documentStyle, changes);

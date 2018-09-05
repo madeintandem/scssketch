@@ -17400,9 +17400,7 @@ module.exports = {
     };
   },
   writeSass: function writeSass(layerTextStyleMap) {
-    var s = writeMobile(layerTextStyleMap.mobile).concat(writeDesktop(layerTextStyleMap.desktop));
-    console.log(s);
-    return s;
+    return writeMobile(layerTextStyleMap.mobile).concat(writeDesktop(layerTextStyleMap.desktop));
   }
 };
 
