@@ -8,9 +8,26 @@ export default function(context) {
   
   const layerStyleMap = layerStyles.parse(sharedStyles)
   const layerStyleSheet = layerStyles.writeSass(layerStyleMap)
-  // console.log(layerStyleSheet)
   
   const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
   const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap)
-  // console.log(layerTextStyleSheet)  
+  
+  var scss = `${layerStyleSheet} \n ${layerTextStyleSheet}`
+  
+  saveScssToFile(scss, document)
+}
+
+function saveScssToFile(fileData, document) {
+  var panel = NSSavePanel.savePanel()
+  panel.setTitle("styles")
+  panel.setAllowedFileTypes(["scss"])
+  panel.setNameFieldStringValue("styles")
+  panel.setAllowsOtherFileTypes(false)
+  panel.setExtensionHidden(false)
+  
+  if (panel.runModal()) {
+  	var path = panel.URL().path()
+  	var file = NSString.stringWithString(fileData)
+    file.writeToFile(path, atomically=true, encoding=NSUTF8StringEncoding, error=null)
+  }
 }

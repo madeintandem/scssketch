@@ -17283,11 +17283,27 @@ __webpack_require__.r(__webpack_exports__);
   var sharedStyles = document.sketchObject.documentData().layerStyles();
   var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
   var layerStyleMap = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.writeSass(layerStyleMap); // console.log(layerStyleSheet)
-
+  var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
   var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
-  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap); // console.log(layerTextStyleSheet)  
+  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap);
+  var scss = "".concat(layerStyleSheet, " \n ").concat(layerTextStyleSheet);
+  saveScssToFile(scss, document);
 });
+
+function saveScssToFile(fileData, document) {
+  var panel = NSSavePanel.savePanel();
+  panel.setTitle("styles");
+  panel.setAllowedFileTypes(["scss"]);
+  panel.setNameFieldStringValue("styles");
+  panel.setAllowsOtherFileTypes(false);
+  panel.setExtensionHidden(false);
+
+  if (panel.runModal()) {
+    var path = panel.URL().path();
+    var file = NSString.stringWithString(fileData);
+    document.writeToFile(path); //, atomically=true, encoding=NSUTF8StringEncoding, error=null)
+  }
+}
 
 /***/ }),
 
