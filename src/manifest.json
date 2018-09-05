@@ -9,16 +9,16 @@
       "script": "./export-to-sass.js"
     },    
     {
-      "name": "resize",
-      "identifier": "resize-identifier",
-      "script": "./resize.js"
+      "name": "Scale Type Ramp",
+      "identifier": "scale-type-ramp-identifier",
+      "script": "./scale-type-ramp.js"
     }
   ],
   "menu": {
     "title": "scssketch",
     "items": [
       "export-to-sass-identifier",
-      "resize-identifier"
+      "scale-type-ramp-identifier"
     ]
   }
 }
