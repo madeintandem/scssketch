@@ -17286,7 +17286,7 @@ __webpack_require__.r(__webpack_exports__);
   var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
   var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
   var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap);
-  var scss = "".concat(layerStyleSheet, " \n ").concat(layerTextStyleSheet);
+  var scss = "".concat(layerStyleSheet, "\n").concat(layerTextStyleSheet);
   saveScssToFile(scss);
 });
 
