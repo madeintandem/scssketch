@@ -41,9 +41,9 @@ function constructShadowValue(style) {
   var offsetX = style.firstEnabledShadow().offsetX()
   var offsetY = style.firstEnabledShadow().offsetY()
   var blurRadius = style.firstEnabledShadow().blurRadius()
-  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "")
+  var rgba = formatRgba(style.firstEnabledShadow().color().toString().replace(/\(|\)|[a-z]|:/g, ""))
   
-  return `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}`
+  return `${offsetX}px ${offsetY}px ${blurRadius}px rgba(${rgba})`
 }
 
 function writeColors(colors) {
@@ -60,4 +60,14 @@ function writeShadows(shadows) {
     styles = styles.concat(`$${shadow.name}: ${shadow.value};\n`)
   })
   return styles
+}
+
+function formatRgba(rgba) {
+  var formattedRgba = _.reduce(rgba.split(" "), (formattedRgba, item) => {
+    var formattedItem = item.match(/\d.\d{2}/g)[0] 
+    formattedRgba.push(formattedItem)
+    return formattedRgba
+  }, [])
+  
+  return formattedRgba.join(", ")
 }

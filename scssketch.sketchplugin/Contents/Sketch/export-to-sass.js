@@ -17274,27 +17274,44 @@ module.exports = function(module) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
+  var layerStyles = __webpack_require__(/*! ./internal/layerStyles */ "./src/internal/layerStyles.js");
 
-  var layerTextStyles = __webpack_require__(/*! ./layerTextStyles */ "./src/layerTextStyles.js");
+  var layerTextStyles = __webpack_require__(/*! ./internal/layerTextStyles */ "./src/internal/layerTextStyles.js");
 
   var sketch = context.api();
   var document = sketch.selectedDocument;
   var sharedStyles = document.sketchObject.documentData().layerStyles();
   var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
   var layerStyleMap = layerStyles.parse(sharedStyles);
-  var layerStyleSheet = layerStyles.writeSass(layerStyleMap); // console.log(layerStyleSheet)
-
+  var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
   var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
-  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap); // console.log(layerTextStyleSheet)  
+  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap);
+  var scss = "".concat(layerStyleSheet, " \n ").concat(layerTextStyleSheet);
+  saveScssToFile(scss, document);
 });
+
+function saveScssToFile(fileData, document) {
+  var panel = NSSavePanel.savePanel();
+  panel.setTitle("styles");
+  panel.setAllowedFileTypes(["scss"]);
+  panel.setNameFieldStringValue("styles");
+  panel.setAllowsOtherFileTypes(false);
+  panel.setExtensionHidden(false);
+
+  if (panel.runModal()) {
+    var path = panel.URL().path();
+    var file = NSString.stringWithFormat("%@", fileData);
+    var f = NSString.stringWithFormat("%@", path);
+    file.writeToFile_atomically_encoding_error(f, true, NSUTF8StringEncoding, null);
+  }
+}
 
 /***/ }),
 
-/***/ "./src/layerStyles.js":
-/*!****************************!*\
-  !*** ./src/layerStyles.js ***!
-  \****************************/
+/***/ "./src/internal/layerStyles.js":
+/*!*************************************!*\
+  !*** ./src/internal/layerStyles.js ***!
+  \*************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -17347,8 +17364,8 @@ function constructShadowValue(style) {
   var offsetX = style.firstEnabledShadow().offsetX();
   var offsetY = style.firstEnabledShadow().offsetY();
   var blurRadius = style.firstEnabledShadow().blurRadius();
-  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
-  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
+  var rgba = formatRgba(style.firstEnabledShadow().color().toString().replace(/\(|\)|[a-z]|:/g, ""));
+  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba(").concat(rgba, ")");
 }
 
 function writeColors(colors) {
@@ -17371,12 +17388,22 @@ function writeShadows(shadows) {
   return styles;
 }
 
+function formatRgba(rgba) {
+  var formattedRgba = _.reduce(rgba.split(" "), function (formattedRgba, item) {
+    var formattedItem = item.match(/\d.\d{2}/g)[0];
+    formattedRgba.push(formattedItem);
+    return formattedRgba;
+  }, []);
+
+  return formattedRgba.join(", ");
+}
+
 /***/ }),
 
-/***/ "./src/layerTextStyles.js":
-/*!********************************!*\
-  !*** ./src/layerTextStyles.js ***!
-  \********************************/
+/***/ "./src/internal/layerTextStyles.js":
+/*!*****************************************!*\
+  !*** ./src/internal/layerTextStyles.js ***!
+  \*****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -17468,7 +17495,7 @@ function printStyle(style) {
   var sass = "";
 
   _.forEach(_.omit(style, ["name"]), function (value, key) {
-    sass += value ? "".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
+    sass += value ? "\t".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
   });
 
   return sass;

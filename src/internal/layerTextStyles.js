@@ -79,7 +79,7 @@ function writeDesktop(desktopStyles) {
 function printStyle(style) {
   var sass = ""
   _.forEach(_.omit(style, ["name"]), (value, key) => {
-    sass += value ? `${key.replace("_", "-")}: ${value};\n` : ""
+    sass += value ? `\t${key.replace("_", "-")}: ${value};\n` : ""
   })  
   return sass
 }
