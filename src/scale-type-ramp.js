@@ -1,16 +1,44 @@
-var sketch;
-var sharedStyles;
-var doc;
-
-function initVars(context) {
-  sketch = context.api();
-  doc = sketch.selectedDocument;
-  sharedStyles = document.sketchObject.documentData().layerStyles();
-}
-
-// Here are some options that I'm hard-coding for now
+var _ = require("lodash")
 const numberOfTextStyles = 5; // This does not include paragraph styles
 const numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller than the base paragraph size
+var sharedStyles
+var doc
+
+export default function(context) {
+  var sketch = context.api()
+  doc = sketch.selectedDocument
+  sharedStyles = doc.sketchObject.documentData().layerTextStyles()
+
+  // Here are some options that I'm hard-coding for now
+  var window = createWindow();
+  var alert = window[0]; 
+
+  var response = alert.runModal()
+  if (response === 1000) {
+    // They clicked OK
+    var desktopType = findAndGetType({
+      baseFontSize: parseInt(dFontSize.stringValue()),
+      lineHeightFactor: parseFloat(dLineHeight.stringValue()),
+      scaleFactor: parseFloat(dScaleFactor.stringValue())
+    })
+    var mobileType = findAndGetType({
+      baseFontSize: parseInt(mFontSize.stringValue()),
+      lineHeightFactor: parseFloat(mLineHeight.stringValue()),
+      scaleFactor: parseFloat(mScaleFactor.stringValue())
+    })
+    
+    // Log the results to the console
+    console.log("desktop type:", desktopType)
+    console.log("mobile type:", mobileType)
+    
+    if (desktopType) {
+      updateTypeStyles(desktopType, "desktop")
+    }
+    if (mobileType) {
+      updateTypeStyles(mobileType)
+    }
+  }
+}
 
 // THIS IS THE MEAT OF THIS THING
 // ---------------------------------------------------------------------------
@@ -216,96 +244,89 @@ function createWindow () {
   return [alert]
 }
 
-var findLayersMatchingPredicate_inContainer_filterByType = function(context, predicate, container, layerType) {
-    var scope;
-    initVars(context)
+var findLayersMatchingPredicate_inContainer_filterByType = function(predicate, container, layerType) {
+  var scope;
+  switch (layerType) {
+    case MSPage :
+      scope = doc.sketchObject.pages()
+      return scope.filteredArrayUsingPredicate(predicate)
+    break;
 
-    switch (layerType) {
-        case MSPage :
-            scope = doc.pages()
-            return scope.filteredArrayUsingPredicate(predicate)
-        break;
+    case MSArtboardGroup :
+      if(typeof container !== 'undefined' && container != nil) {
+        if (container.className == "MSPage") {
+          scope = container.artboards()
+          return scope.filteredArrayUsingPredicate(predicate)
+        }
+      } else {
+        // search all pages
+        var filteredArray = NSArray.array()
+        var loopPages = doc.sketchObject.pages().objectEnumerator(), page;
+        while (page = loopPages.nextObject()) {
+            scope = page.artboards()
+            filteredArray = filteredArray.arrayByAddingObjectsFromArray(scope.filteredArrayUsingPredicate(predicate))
+        }
+        return filteredArray
+      }
+    break;
 
-        case MSArtboardGroup :
-            if(typeof container !== 'undefined' && container != nil) {
-                if (container.className == "MSPage") {
-                    scope = container.artboards()
-                    return scope.filteredArrayUsingPredicate(predicate)
-                }
-            } else {
-                // search all pages
-                var filteredArray = NSArray.array()
-                var loopPages = doc.pages().objectEnumerator(), page;
-                while (page = loopPages.nextObject()) {
-                    scope = page.artboards()
-                    filteredArray = filteredArray.arrayByAddingObjectsFromArray(scope.filteredArrayUsingPredicate(predicate))
-                }
-                return filteredArray
-            }
-        break;
-
-        default :
-            if(typeof container !== 'undefined' && container != nil) {
-                scope = container.children()
-                return scope.filteredArrayUsingPredicate(predicate)
-            } else {
-                var filteredArray = NSArray.array()
-                var loopPages = doc.pages().objectEnumerator(), page;
-                while (page = loopPages.nextObject()) {
-                    scope = page.children()
-                    filteredArray = filteredArray.arrayByAddingObjectsFromArray(scope.filteredArrayUsingPredicate(predicate))
-                }
-                return filteredArray
-            }
+    default :
+      if(typeof container !== 'undefined' && container != nil) {
+        scope = container.children()
+        return scope.filteredArrayUsingPredicate(predicate)
+      } else {
+        var filteredArray = NSArray.array()
+        var loopPages = doc.sketchObject.pages().objectEnumerator(), page;
+        while (page = loopPages.nextObject()) {
+            scope = page.children()
+            filteredArray = filteredArray.arrayByAddingObjectsFromArray(scope.filteredArrayUsingPredicate(predicate))
+        }
+        return filteredArray
+      }
     }
     return NSArray.array() // Return an empty array if no matches were found
 }
 
-var findLayersWithSharedStyleNamed_inContainer = function(context, styleName, newStyle, container) {
-    initVars(context)
-
+var findLayersWithSharedStyleNamed_inContainer = function(styleName, newStyle, container) {
     // Get sharedObjectID of shared style with specified name
-    var allStyles = doc.documentData().layerTextStyles().objects()
     var styleSearchPredicate = NSPredicate.predicateWithFormat("name == %@", styleName)
-    var filteredStyles = allStyles.filteredArrayUsingPredicate(styleSearchPredicate)
+    var filteredStyles = sharedStyles.objects().filteredArrayUsingPredicate(styleSearchPredicate)
 
     var filteredLayers = NSArray.array()
     var loopStyles = filteredStyles.objectEnumerator(), style, predicate;
 
     while (style = loopStyles.nextObject()) {
-        predicate = NSPredicate.predicateWithFormat("style.sharedObjectID == %@", style.objectID())
-        filteredLayers = filteredLayers.arrayByAddingObjectsFromArray(findLayersMatchingPredicate_inContainer_filterByType(context, predicate, container))
+      predicate = NSPredicate.predicateWithFormat("style.sharedObjectID == %@", style.objectID())
+      filteredLayers = filteredLayers.arrayByAddingObjectsFromArray(findLayersMatchingPredicate_inContainer_filterByType(predicate, container))
     }
 
     for (var i = 0; i < filteredLayers.length; i++) {
-        filteredLayers[i].style = newStyle;
+      filteredLayers[i].style = newStyle;
     }
 
     return filteredLayers
 }
 
-function checkForMatchingStyles(context, existingTextObjects, newStyleName, newStyle) {
-    initVars(context)
+function checkForMatchingStyles(existingTextObjects, newStyleName, newStyle) {
+  if (existingTextObjects.count() != 0) {
+    for (var i = 0; i < existingTextObjects.count(); i++) {
+      var existingName = existingTextObjects[i].name();
+      var style = existingTextObjects.objectAtIndex(i);
+      var textStyle;
 
-    if (existingTextObjects.count() != 0) {
-        for (var i = 0; i < existingTextObjects.count(); i++) {
-            var existingName = existingTextObjects[i].name();
-            var style = existingTextObjects.objectAtIndex(i);
-            var textStyle;
-
-            if(existingName == newStyleName) {
-                existingTextObjects[i].updateToMatch(newStyle)
-                return;
-            }
-        }
-
-        var s = MSSharedStyle.alloc().initWithName_firstInstance(newStyleName,newStyle);
-        sharedStyles.addSharedObject(s);
-
-    } else {
-        var s = MSSharedStyle.alloc().initWithName_firstInstance(newStyleName,newStyle);
-        sharedStyles.addSharedObject(s);
+      if(existingName == newStyleName) {
+        existingTextObjects[i].updateToMatch(newStyle)
+        return;
+      }
     }
+
+    var s = MSSharedStyle.alloc().initWithName_firstInstance(newStyleName,newStyle);
+    sharedStyles.addSharedObject(s);
+
+  } else {
+    var s = MSSharedStyle.alloc().initWithName_firstInstance(newStyleName,newStyle);
+    sharedStyles.addSharedObject(s);
+  }
 }
 
 function getTextStyleAsJson (style, changes) {
@@ -315,10 +336,10 @@ function getTextStyleAsJson (style, changes) {
   var color = definedTextStyle.attributes.MSAttributedStringColorAttribute;
 
   if (color != null) {
-      var red = color.red();
-      var green = color.green();
-      var blue = color.blue();
-      var alpha = color.alpha();
+    var red = color.red();
+    var green = color.green();
+    var blue = color.blue();
+    var alpha = color.alpha();
   }
 
   var name = String(style.name());
@@ -328,9 +349,9 @@ function getTextStyleAsJson (style, changes) {
   var par = definedTextStyle.attributes.NSParagraphStyle;
 
   if (par != null) {
-      var align = par.alignment();
-      var lineHeight = changes.lineHeight;
-      var paragraphSpacing = par.paragraphSpacing();
+    var align = par.alignment();
+    var lineHeight = changes.lineHeight;
+    var paragraphSpacing = par.paragraphSpacing();
   }
 
   var spacing = String(definedTextStyle.attributes.NSKern) * 1;
@@ -338,9 +359,9 @@ function getTextStyleAsJson (style, changes) {
   var text = definedTextStyle.attributes.MSAttributedStringTextTransformAttribute;
 
   if (text != null) {
-      var textTransform = String(definedTextStyle.attributes.MSAttributedStringTextTransformAttribute) * 1;
+    var textTransform = String(definedTextStyle.attributes.MSAttributedStringTextTransformAttribute) * 1;
   } else {
-      var textTransform = 0;
+    var textTransform = 0;
   }
 
   var strike = String(definedTextStyle.attributes.NSStrikethrough) * 1
@@ -351,10 +372,10 @@ function getTextStyleAsJson (style, changes) {
     font: family,
     size: size,
     color: {
-        red: red,
-        green: green,
-        blue: blue,
-        alpha: alpha
+      red: red,
+      green: green,
+      blue: blue,
+      alpha: alpha
     },
     alignment: align,
     spacing: spacing,
@@ -389,7 +410,8 @@ function setTypeStyle (style) {
   var underline = style.underline || 0;
 
   var rectTextFrame = NSMakeRect(0, 0, 250, 50);
-  var newText = doc.MSTextLayer().initWithFrame(rectTextFrame);
+  
+  var newText = MSTextLayer.alloc().initWithFrame(rectTextFrame);
 
   var color = MSColor.colorWithRed_green_blue_alpha(red, green, blue, alpha);
 
@@ -399,9 +421,9 @@ function setTypeStyle (style) {
   newText.fontPostscriptName = family;
 
   if (isNaN(red) != true) {
-      newText.textColor = color;
+    newText.textColor = color;
   } else {
-      newText.textColor = MSColor.colorWithNSColor(NSColor.colorWithGray(0.0));
+    newText.textColor = MSColor.colorWithNSColor(NSColor.colorWithGray(0.0));
   }
 
   newText.textAlignment = align;
@@ -416,10 +438,10 @@ function setTypeStyle (style) {
   newText.addAttribute_value("NSStrikethrough", strikethrough);
   newText.addAttribute_value("NSUnderline", underline);
 
-  checkForMatchingStyles(context, sharedStyles.objects(), name, newText.style());
-  findLayersWithSharedStyleNamed_inContainer(context, newText.name() , newText.style())
+  checkForMatchingStyles(sharedStyles.objects(), name, newText.style());
+  findLayersWithSharedStyleNamed_inContainer(newText.name() , newText.style())
 
-  doc.reloadInspector()
+  doc.sketchObject.reloadInspector()
 }
 
 function updateTypeStyles(styleMap, desktopRamp) {
@@ -445,39 +467,3 @@ function updateTypeStyles(styleMap, desktopRamp) {
     });
   });
 }
-
-function settings(context){
-  var window = createWindow(context);
-  var alert = window[0]; 
-
-  var response = alert.runModal()
-  if (response === 1000) {
-    // They clicked OK
-
-    var desktopType = null;
-    var mobileType = null;
-    
-
-    desktopType = findAndGetType({
-      baseFontSize: parseInt(dFontSize.stringValue()),
-      lineHeightFactor: parseFloat(dLineHeight.stringValue()),
-      scaleFactor: parseFloat(dScaleFactor.stringValue())
-    })
-    mobileType = findAndGetType({
-      baseFontSize: parseInt(mFontSize.stringValue()),
-      lineHeightFactor: parseFloat(mLineHeight.stringValue()),
-      scaleFactor: parseFloat(mScaleFactor.stringValue())
-    })
-    
-    // Log the results to the console
-    console.log("desktop type:", desktopType)
-    console.log("mobile type:", mobileType)
-    if (desktopType) {
-      updateTypeStyles(desktopType, "desktop")
-    }
-    if (mobileType) {
-      updateTypeStyles(mobileType)
-    }
-  }
-}
-settings()
