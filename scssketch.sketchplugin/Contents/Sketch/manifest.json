@@ -25,5 +25,7 @@
   "name": "scssketch",
   "identifier": "scssketch",
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
+  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml",
+  "author": "Sarah Aslanifar",
+  "authorEmail": "sarah.aslanifar@devmynd.com"
 }
