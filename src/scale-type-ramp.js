@@ -3,10 +3,10 @@ const numberOfTextStyles = 5; // This does not include paragraph styles
 const numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller than the base paragraph size
 var sharedStyles
 var doc
+var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 
 export default function(context) {
-  var sketch = context.api()
-  doc = sketch.selectedDocument
+  doc = context.api().selectedDocument
   sharedStyles = doc.sketchObject.documentData().layerTextStyles()
 
   // Here are some options that I'm hard-coding for now
@@ -28,8 +28,8 @@ export default function(context) {
     })
     
     // Log the results to the console
-    console.log("desktop type:", desktopType)
-    console.log("mobile type:", mobileType)
+    // console.log("desktop type:", desktopType)
+    // console.log("mobile type:", mobileType)
     
     if (desktopType) {
       updateTypeStyles(desktopType, "desktop")
@@ -42,7 +42,7 @@ export default function(context) {
 
 // THIS IS THE MEAT OF THIS THING
 // ---------------------------------------------------------------------------
-var calculateType = function(options) {
+var calculateType = (options) => {
   // Get the three values from the DOM
   var baseFontSize = parseInt(options.baseFontSize);
   var lineHeightFactor = parseFloat(options.lineHeightFactor);
@@ -113,13 +113,8 @@ function findAndGetType (options) {
   var baseFontSize = options.baseFontSize;
   var lineHeightFactor = options.lineHeightFactor;
   var scaleFactor = options.scaleFactor;
-  
-  // Do we have what we need?
-  if (!baseFontSize || !lineHeightFactor || !scaleFactor) {
-    // We don't have all three values. Don't calc.
-    console.log('Not all values present');
-    return null;
-  } else {
+
+  if (baseFontSize  && lineHeightFactor && scaleFactor) {
     // We have what we need, go ahead and calculate
     var result = calculateType({
       baseFontSize: baseFontSize,
@@ -131,11 +126,8 @@ function findAndGetType (options) {
 }
 
 // Let's build a dialog box for inputs
-
-var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 function createWindow () {
   var alert = COSAlertWindow.new();
-
   alert.setMessageText("Set Type Ramp")
 
   // Creating dialog buttons
@@ -173,7 +165,6 @@ function createWindow () {
 
   mScaleFactor = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 140, (viewWidth/3) - 20, 20));
   var mScaleFactorLabel = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 120, (viewWidth/3) - 20, 20));
-
 
   desktopTypeRampLabel.setStringValue("Desktop Type Ramp");
   desktopTypeRampLabel.setSelectable(false);
@@ -244,7 +235,7 @@ function createWindow () {
   return [alert]
 }
 
-var findLayersMatchingPredicate_inContainer_filterByType = function(predicate, container, layerType) {
+var findLayersMatchingPredicate_inContainer_filterByType = (predicate, container, layerType) => {
   var scope;
   switch (layerType) {
     case MSPage :
@@ -287,7 +278,7 @@ var findLayersMatchingPredicate_inContainer_filterByType = function(predicate, c
     return NSArray.array() // Return an empty array if no matches were found
 }
 
-var findLayersWithSharedStyleNamed_inContainer = function(styleName, newStyle, container) {
+var findLayersWithSharedStyleNamed_inContainer = (styleName, newStyle, container) => {
     // Get sharedObjectID of shared style with specified name
     var styleSearchPredicate = NSPredicate.predicateWithFormat("name == %@", styleName)
     var filteredStyles = sharedStyles.objects().filteredArrayUsingPredicate(styleSearchPredicate)
@@ -455,13 +446,13 @@ function updateTypeStyles(styleMap, desktopRamp) {
       size: calculatedStyle.fontSize,
       lineHeight: calculatedStyle.lineHeight
     }
-    console.log(changes)
+    // console.log(changes)
 
     sharedStyles.objects().forEach((documentStyle) => {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
         var style = getTextStyleAsJson(documentStyle, changes);
-        console.log(style);
+        // console.log(style);
         setTypeStyle(style)
       }
     });
