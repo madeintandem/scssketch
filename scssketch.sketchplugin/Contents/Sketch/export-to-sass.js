@@ -17274,9 +17274,9 @@ module.exports = function(module) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var layerStyles = __webpack_require__(/*! ./layerStyles */ "./src/layerStyles.js");
+  var layerStyles = __webpack_require__(/*! ./internal/layerStyles */ "./src/internal/layerStyles.js");
 
-  var layerTextStyles = __webpack_require__(/*! ./layerTextStyles */ "./src/layerTextStyles.js");
+  var layerTextStyles = __webpack_require__(/*! ./internal/layerTextStyles */ "./src/internal/layerTextStyles.js");
 
   var sketch = context.api();
   var document = sketch.selectedDocument;
@@ -17308,10 +17308,10 @@ function saveScssToFile(fileData, document) {
 
 /***/ }),
 
-/***/ "./src/layerStyles.js":
-/*!****************************!*\
-  !*** ./src/layerStyles.js ***!
-  \****************************/
+/***/ "./src/internal/layerStyles.js":
+/*!*************************************!*\
+  !*** ./src/internal/layerStyles.js ***!
+  \*************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -17400,10 +17400,10 @@ function formatRgba(rgba) {
 
 /***/ }),
 
-/***/ "./src/layerTextStyles.js":
-/*!********************************!*\
-  !*** ./src/layerTextStyles.js ***!
-  \********************************/
+/***/ "./src/internal/layerTextStyles.js":
+/*!*****************************************!*\
+  !*** ./src/internal/layerTextStyles.js ***!
+  \*****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 

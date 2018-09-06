@@ -1,6 +1,6 @@
 export default function(context) {
-  const layerStyles = require("./layerStyles");
-  const layerTextStyles = require("./layerTextStyles");
+  const layerStyles = require("./internal/layerStyles");
+  const layerTextStyles = require("./internal/layerTextStyles");
   const sketch = context.api()
   const document = sketch.selectedDocument
   const sharedStyles = document.sketchObject.documentData().layerStyles()
@@ -13,11 +13,10 @@ export default function(context) {
   const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap)
   
   var scss = `${layerStyleSheet} \n ${layerTextStyleSheet}`
-  
-  saveScssToFile(scss, document)
+  saveScssToFile(scss)
 }
 
-function saveScssToFile(fileData, document) {
+function saveScssToFile(fileData) {
   var panel = NSSavePanel.savePanel()
   panel.setTitle("styles")
   panel.setAllowedFileTypes(["scss"])
