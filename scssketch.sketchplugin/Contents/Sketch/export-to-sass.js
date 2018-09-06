@@ -17300,8 +17300,9 @@ function saveScssToFile(fileData, document) {
 
   if (panel.runModal()) {
     var path = panel.URL().path();
-    var file = NSString.stringWithString(fileData);
-    document.writeToFile(path); //, atomically=true, encoding=NSUTF8StringEncoding, error=null)
+    var file = NSString.stringWithFormat("%@", fileData);
+    var f = NSString.stringWithFormat("%@", path);
+    file.writeToFile_atomically_encoding_error(f, true, NSUTF8StringEncoding, null);
   }
 }
 
@@ -17484,7 +17485,7 @@ function printStyle(style) {
   var sass = "";
 
   _.forEach(_.omit(style, ["name"]), function (value, key) {
-    sass += value ? "".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
+    sass += value ? "\t".concat(key.replace("_", "-"), ": ").concat(value, ";\n") : "";
   });
 
   return sass;

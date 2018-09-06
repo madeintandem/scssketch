@@ -27,7 +27,8 @@ function saveScssToFile(fileData, document) {
   
   if (panel.runModal()) {
   	var path = panel.URL().path()
-  	var file = NSString.stringWithString(fileData)
-    file.writeToFile(path, atomically=true, encoding=NSUTF8StringEncoding, error=null)
+    var file = NSString.stringWithFormat("%@", fileData)
+    var f = NSString.stringWithFormat("%@", path)
+    file.writeToFile_atomically_encoding_error(f, true, NSUTF8StringEncoding, null)
   }
 }
