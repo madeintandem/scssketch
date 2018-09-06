@@ -1,40 +1,39 @@
 var _ = require("lodash")
 
 module.exports = {
-  parse: function (sharedStyles) {    
-    var colors = []
-    var shadows = []
+  parse: (sharedStyles) => {    
     var styles = _.sortBy(sharedStyles.objects(), [style => style.name()], ["desc"])
-    _.forEach(styles, function(style){
-        if(String(style.name()).charAt(0) == "[") {
-          addColor(colors, style)
-        } else {
-          addShadow(shadows, style)
-        }
-    })
-    
+    var colors_shadows = _.partition(styles, (style) => { return style.name().charAt(0) == "[" })
+    var colors = formatColors(colors_shadows[0])
+    var shadows = formatShadows(colors_shadows[1])    
     return {colors: colors, shadows: shadows}
   },
   
-  writeSass: function (layerStyleMap) {
-    return writeColors(layerStyleMap.colors).concat(writeShadows(layerStyleMap.shadows))
+  writeSass: (layerStyleMap) => {
+    return `${writeColors(layerStyleMap.colors)}\n${writeShadows(layerStyleMap.shadows)}`
   }
 }
 
-function addColor(colorsArray, style) {
-  var tmp = {
-    name: String(style.name()).split(" ").pop().concat("_color"),
-    value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
-  }
-  colorsArray.push(tmp)
+function formatColors(colors) {
+  return _.reduce(colors, (formattedColors, style) => {
+      var tmp = {
+        name: String(style.name()).split(" ").pop().concat("_color"),
+        value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
+      }
+      formattedColors.push(tmp)    
+      return formattedColors;
+  }, [])
 }
 
-function addShadow(shadowsArray, style) {
-  tmp = {
-    name: String(style.name()).replace(" ", "_"),
-    value: constructShadowValue(style.value())
-  }
-  shadowsArray.push(tmp)
+function formatShadows(shadows) {
+  return _.reduce(shadows, (formattedShadows, style) => {
+    tmp = {
+      name: String(style.name()).replace(" ", "_"),
+      value: constructShadowValue(style.value())
+    }
+    formattedShadows.push(tmp)
+    return formattedShadows
+  }, [])
 }
 
 function constructShadowValue(style) {
@@ -48,26 +47,24 @@ function constructShadowValue(style) {
 
 function writeColors(colors) {
   var styles = ""
-  _.forEach(colors, function(color) {
-    styles = styles.concat(`$${color.name}: ${color.value};\n`)
+  _.forEach(colors, (color) => {
+    styles += `$${color.name}: ${color.value};\n`
   })
   return styles
 }
 
 function writeShadows(shadows) {
   var styles = ""
-  _.forEach(shadows, function(shadow) {
-    styles = styles.concat(`$${shadow.name}: ${shadow.value};\n`)
+  _.forEach(shadows, (shadow) => {
+    styles += `$${shadow.name}: ${shadow.value};\n`
   })
   return styles
 }
 
 function formatRgba(rgba) {
-  var formattedRgba = _.reduce(rgba.split(" "), (formattedRgba, item) => {
+  return _.reduce(rgba.split(" "), (formattedRgba, item) => {
     var formattedItem = item.match(/\d.\d{2}/g)[0] 
     formattedRgba.push(formattedItem)
     return formattedRgba
-  }, [])
-  
-  return formattedRgba.join(", ")
+  }, []).join(", ")
 }
