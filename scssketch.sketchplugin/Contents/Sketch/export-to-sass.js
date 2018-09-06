@@ -17364,8 +17364,8 @@ function constructShadowValue(style) {
   var offsetX = style.firstEnabledShadow().offsetX();
   var offsetY = style.firstEnabledShadow().offsetY();
   var blurRadius = style.firstEnabledShadow().blurRadius();
-  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
-  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
+  var rgba = formatRgba(style.firstEnabledShadow().color().toString().replace(/\(|\)|[a-z]|:/g, ""));
+  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba(").concat(rgba, ")");
 }
 
 function writeColors(colors) {
@@ -17386,6 +17386,16 @@ function writeShadows(shadows) {
   });
 
   return styles;
+}
+
+function formatRgba(rgba) {
+  var formattedRgba = _.reduce(rgba.split(" "), function (formattedRgba, item) {
+    var formattedItem = item.match(/\d.\d{2}/g)[0];
+    formattedRgba.push(formattedItem);
+    return formattedRgba;
+  }, []);
+
+  return formattedRgba.join(", ");
 }
 
 /***/ }),
