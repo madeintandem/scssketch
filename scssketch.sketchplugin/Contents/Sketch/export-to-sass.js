@@ -17431,9 +17431,7 @@ module.exports = {
 };
 
 function addMobile(mobileStyles) {
-  var mobile = [];
-
-  _.forEach(mobileStyles, function (style) {
+  return _.reduce(mobileStyles, function (mobile, style) {
     var attributes = style.value().textStyle().attributes();
     var tmp = {
       name: style.name(),
@@ -17445,15 +17443,12 @@ function addMobile(mobileStyles) {
       text_transform: attributes.MSAttributedStringTextTransformAttribute
     };
     mobile.push(tmp);
-  });
-
-  return mobile;
+    return mobile;
+  }, []);
 }
 
 function addDesktop(desktopStyles) {
-  var desktop = [];
-
-  _.forEach(desktopStyles, function (style) {
+  return _.reduce(desktopStyles, function (desktop, style) {
     var attributes = style.value().textStyle().attributes();
     var tmp = {
       name: style.name(),
@@ -17461,9 +17456,8 @@ function addDesktop(desktopStyles) {
       line_height: "".concat(attributes.NSParagraphStyle.maximumLineHeight(), "px")
     };
     desktop.push(tmp);
-  });
-
-  return desktop;
+    return desktop;
+  }, []);
 }
 
 function writeMobile(mobileStyles) {

@@ -21,8 +21,7 @@ module.exports = {
 }
 
 function addMobile(mobileStyles) {
-  var mobile = []
-   _.forEach(mobileStyles, (style) => {
+  return _.reduce(mobileStyles, (mobile, style) => {
     const attributes = style.value().textStyle().attributes();
     const tmp = {
       name: style.name(),
@@ -34,14 +33,12 @@ function addMobile(mobileStyles) {
       text_transform: attributes.MSAttributedStringTextTransformAttribute
     }
     mobile.push(tmp)
-  })
-
-  return mobile
+    return mobile
+  }, [])
 }
 
 function addDesktop(desktopStyles) {  
-  var desktop = []
-   _.forEach(desktopStyles, (style) => {
+  return _.reduce(desktopStyles, (desktop, style) => {
     const attributes = style.value().textStyle().attributes();
     const tmp = {
       name: style.name(),
@@ -49,9 +46,8 @@ function addDesktop(desktopStyles) {
       line_height: `${attributes.NSParagraphStyle.maximumLineHeight()}px`
     }
     desktop.push(tmp)
-  })
-  
-  return desktop
+    return desktop
+  }, [])
 }
 
 function writeMobile(mobileStyles) {
