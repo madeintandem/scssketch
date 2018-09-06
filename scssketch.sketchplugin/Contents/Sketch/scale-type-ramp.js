@@ -17281,9 +17281,9 @@ var numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller
 
 var sharedStyles;
 var doc;
+var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
-  var sketch = context.api();
-  doc = sketch.selectedDocument;
+  doc = context.api().selectedDocument;
   sharedStyles = doc.sketchObject.documentData().layerTextStyles(); // Here are some options that I'm hard-coding for now
 
   var window = createWindow();
@@ -17302,9 +17302,8 @@ var doc;
       lineHeightFactor: parseFloat(mLineHeight.stringValue()),
       scaleFactor: parseFloat(mScaleFactor.stringValue())
     }); // Log the results to the console
-
-    console.log("desktop type:", desktopType);
-    console.log("mobile type:", mobileType);
+    // console.log("desktop type:", desktopType)
+    // console.log("mobile type:", mobileType)
 
     if (desktopType) {
       updateTypeStyles(desktopType, "desktop");
@@ -17375,13 +17374,9 @@ function findAndGetType(options) {
   // Get the necessary vars from the options passed in
   var baseFontSize = options.baseFontSize;
   var lineHeightFactor = options.lineHeightFactor;
-  var scaleFactor = options.scaleFactor; // Do we have what we need?
+  var scaleFactor = options.scaleFactor;
 
-  if (!baseFontSize || !lineHeightFactor || !scaleFactor) {
-    // We don't have all three values. Don't calc.
-    console.log('Not all values present');
-    return null;
-  } else {
+  if (baseFontSize && lineHeightFactor && scaleFactor) {
     // We have what we need, go ahead and calculate
     var result = calculateType({
       baseFontSize: baseFontSize,
@@ -17392,8 +17387,6 @@ function findAndGetType(options) {
   }
 } // Let's build a dialog box for inputs
 
-
-var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 
 function createWindow() {
   var alert = COSAlertWindow.new();
@@ -17687,14 +17680,14 @@ function updateTypeStyles(styleMap, desktopRamp) {
     var token = "[" + ramp + calculatedStyle.selector;
     var changes = {
       size: calculatedStyle.fontSize,
-      lineHeight: calculatedStyle.lineHeight
+      lineHeight: calculatedStyle.lineHeight // console.log(changes)
+
     };
-    console.log(changes);
     sharedStyles.objects().forEach(function (documentStyle) {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
-        var style = getTextStyleAsJson(documentStyle, changes);
-        console.log(style);
+        var style = getTextStyleAsJson(documentStyle, changes); // console.log(style);
+
         setTypeStyle(style);
       }
     });
