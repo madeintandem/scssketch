@@ -17319,16 +17319,21 @@ var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
 module.exports = {
   parse: function parse(sharedStyles) {
-    var styles = _.sortBy(sharedStyles.objects(), [function (style) {
+    var sortedStyles = _.sortBy(sharedStyles.objects(), [function (style) {
       return style.name();
     }], ["desc"]);
 
-    var colors_shadows = _.partition(styles, function (style) {
-      return style.name().charAt(0) == "[";
+    var colors = [];
+    var shadows = [];
+
+    _.forEach(sortedStyles, function (style) {
+      if (String(style.name()).charAt(0) == "[") {
+        addColor(colors, style);
+      } else {
+        addShadow(shadows, style);
+      }
     });
 
-    var colors = formatColors(colors_shadows[0]);
-    var shadows = formatShadows(colors_shadows[1]);
     return {
       colors: colors,
       shadows: shadows
@@ -17339,38 +17344,61 @@ module.exports = {
   }
 };
 
-function formatColors(colors) {
-  return _.reduce(colors, function (formattedColors, style) {
-    var tmp = {
-      name: String(style.name()).split(" ").pop().concat("_color"),
-      value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
-    };
-    formattedColors.push(tmp);
-    return formattedColors;
-  }, []);
+function addColor(colorsArray, style) {
+  var thisName = String(style.name());
+  thisName = thisName.slice(thisName.indexOf("]") + 1).trim();
+  var tmp = {
+    name: hyphenize(thisName) + "-color",
+    value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
+  };
+  colorsArray.push(tmp);
 }
 
-function formatShadows(shadows) {
-  return _.reduce(shadows, function (formattedShadows, style) {
-    tmp = {
-      name: String(style.name()).replace(" ", "_"),
-      value: constructShadowValue(style.value())
-    };
-    formattedShadows.push(tmp);
-    return formattedShadows;
-  }, []);
+function addShadow(shadowsArray, style) {
+  tmp = {
+    name: hyphenize(String(style.name())),
+    value: constructShadowValue(style.value())
+  };
+  shadowsArray.push(tmp);
 }
 
 function constructShadowValue(style) {
   var offsetX = style.firstEnabledShadow().offsetX();
   var offsetY = style.firstEnabledShadow().offsetY();
   var blurRadius = style.firstEnabledShadow().blurRadius();
-  var rgba = formatRgba(style.firstEnabledShadow().color().toString().replace(/\(|\)|[a-z]|:/g, ""));
-  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba(").concat(rgba, ")");
+  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
+  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+  rgba = "(";
+  temprgba.forEach(function (value) {
+    rgba = rgba + removeZeros(value) + ", ";
+  });
+  rgba = rgba.slice(0, -2) + ")";
+  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
+}
+
+function removeZeros(str) {
+  var regEx1 = /[0]+$/;
+  var regEx2 = /[.]$/;
+
+  if (str.indexOf('.') > -1) {
+    str = str.replace(regEx1, ''); // Remove trailing 0's
+  }
+
+  str = str.replace(regEx2, ''); // Remove trailing decimal
+
+  return str;
+}
+
+function hyphenize(str) {
+  return str.replace(/\s+/g, '-').replace(/\.+/g, '-').replace(/\,+/g, '-').toLowerCase();
 }
 
 function writeColors(colors) {
   var styles = "";
+
+  if (colors.length > 0) {
+    styles = styles + "// COLORS\n";
+  }
 
   _.forEach(colors, function (color) {
     styles += "$".concat(color.name, ": ").concat(color.value, ";\n");
@@ -17382,19 +17410,15 @@ function writeColors(colors) {
 function writeShadows(shadows) {
   var styles = "";
 
+  if (shadows.length) {
+    styles = styles + "// SHADOWS\n";
+  }
+
   _.forEach(shadows, function (shadow) {
     styles += "$".concat(shadow.name, ": ").concat(shadow.value, ";\n");
   });
 
   return styles;
-}
-
-function formatRgba(rgba) {
-  return _.reduce(rgba.split(" "), function (formattedRgba, item) {
-    var formattedItem = item.match(/\d.\d{2}/g)[0];
-    formattedRgba.push(formattedItem);
-    return formattedRgba;
-  }, []).join(", ");
 }
 
 /***/ }),
@@ -17601,7 +17625,13 @@ function writeTypeStyles(styles) {
     output = output.concat("  font-family: " + thisStyle.font + ";\n");
     output = output.concat("  font-size: " + thisStyle.size + "px;\n");
     output = output.concat("  line-height: " + thisStyle.lineHeight + "px;\n");
-    output = output.concat("  margin: 0 0 " + thisStyle.paragraphSpacing + "px 0;\n");
+    var marginValue = "0";
+
+    if (thisStyle.paragraphSpacing > 0) {
+      marginValue = "0 0 " + thisStyle.paragraphSpacing + "px 0";
+    }
+
+    output = output.concat("  margin: " + marginValue + ";\n");
     output = output.concat("}\n");
   });
   return output;

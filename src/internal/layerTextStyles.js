@@ -165,7 +165,11 @@ function writeTypeStyles(styles) {
     output = output.concat("  font-family: " + thisStyle.font + ";\n");
     output = output.concat("  font-size: " + thisStyle.size + "px;\n")
     output = output.concat("  line-height: " + thisStyle.lineHeight + "px;\n")
-    output = output.concat("  margin: 0 0 " + thisStyle.paragraphSpacing + "px 0;\n")
+    var marginValue = "0";
+    if (thisStyle.paragraphSpacing > 0) {
+      marginValue = "0 0 " + thisStyle.paragraphSpacing + "px 0";
+    }
+    output = output.concat("  margin: " + marginValue + ";\n")
     output = output.concat("}\n")
   })
   return output
