@@ -2,87 +2,171 @@ var _ = require("lodash")
 
 module.exports = {
   parse: function (sharedTextStyles) { 
-    var mobileStyles = _.filter(sharedTextStyles.objects(), (style) => { 
-      return style.name().match(/\[M[\d|P]\]/);
-    })
 
-    var desktopStyles = _.filter(sharedTextStyles.objects(), (style) => { 
-      return style.name().match(/\[D[\d|P]\]/);
+    var desktop = []
+    var mobile = []
+    var styles = sharedTextStyles.objects().sort(compare)
+    var typeStyles = getUniqueStyles(styles)
+    typeStyles.forEach(function(thisStyle){
+      if(String(thisStyle.name()).slice(0,2).toLowerCase() == "[m") {
+        mobile.push(getTextStyleAsJson(thisStyle))
+      } else {
+        desktop.push(getTextStyleAsJson(thisStyle))
+      }
     })
-
-    var mobile = addMobile(mobileStyles)
-    var desktop = addDesktop(desktopStyles)
-    return {mobile: mobile, desktop: desktop}
+    return {"desktop": popPToTop(desktop), "mobile": popPToTop(mobile)};
   },
   
   writeSass: function (layerTextStyleMap) {
-    return writeMobile(layerTextStyleMap.mobile).concat(writeDesktop(layerTextStyleMap.desktop))
+    var textStyleSheet = ""
+    if (layerTextStyleMap.mobile.length > 0) {
+      textStyleSheet = textStyleSheet + "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.mobile)
+    }
+    if (layerTextStyleMap.desktop.length > 0) {
+      textStyleSheet = textStyleSheet + "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.desktop)
+    }
+    if (layerTextStyleMap.length > 0) {
+      textStyleSheet = "\n// TYPE STYLES\n" + textStyleSheet
+    }
+    return textStyleSheet
   }
 }
 
-function addMobile(mobileStyles) {
-  return _.reduce(mobileStyles, (mobile, style) => {
-    const attributes = style.value().textStyle().attributes();
-    const tmp = {
-      name: style.name(),
-      font_family: attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute),
-      font_size: `${attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)}px`,
-      // font_weight: ,
-      line_height: `${attributes.NSParagraphStyle.maximumLineHeight()}px`,
-      margin: 0,
-      text_transform: attributes.MSAttributedStringTextTransformAttribute
+function getTextStyleAsJson (style) {
+  var attributes = style.style().textStyle().attributes();
+  var color = attributes.MSAttributedStringColorAttribute;
+  if (color != null) {
+      var red = color.red();
+      var green = color.green();
+      var blue = color.blue();
+      var alpha = color.alpha();
+  }
+  var name = String(style.name());
+  var family = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute))
+  var size = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)) * 1
+  var par = attributes.NSParagraphStyle;
+  if (par != null) {
+      var align = par.alignment();
+      var lineHeight = par.maximumLineHeight();
+      var paragraphSpacing = par.paragraphSpacing();
+  }
+  var spacing = String(attributes.NSKern) * 1;
+  var text = attributes.MSAttributedStringTextTransformAttribute;
+  if (text != null) {
+      var textTransform = String(attributes.MSAttributedStringTextTransformAttribute) * 1;
+  } else {
+      var textTransform = 0;
+  }
+  var strike = String(attributes.NSStrikethrough) * 1
+  var underline = String(attributes.NSUnderline) * 1
+  var style = {
+    name: name,
+    font: family,
+    size: size,
+    color: {
+        red: red,
+        green: green,
+        blue: blue,
+        alpha: alpha
+    },
+    alignment: align,
+    spacing: spacing,
+    lineHeight: lineHeight,
+    paragraphSpacing: paragraphSpacing,
+    textTransform: textTransform,
+    strikethrough: strike,
+    underline: underline
+  };
+  return style;
+}
+function popPToTop (styles) {
+  styles.forEach(function(style, indx){
+    if (String(style.name).charAt(2).toLowerCase() == "p") {
+      array_move(styles, indx, 0);
     }
-    mobile.push(tmp)
-    return mobile
-  }, [])
+  });
+  return styles
 }
-
-function addDesktop(desktopStyles) {  
-  return _.reduce(desktopStyles, (desktop, style) => {
-    const attributes = style.value().textStyle().attributes();
-    const tmp = {
-      name: style.name(),
-      font_size: `${attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)}px`,
-      line_height: `${attributes.NSParagraphStyle.maximumLineHeight()}px`
+function array_move(arr, old_index, new_index) {
+    if (new_index >= arr.length) {
+        var k = new_index - arr.length + 1;
+        while (k--) {
+            arr.push(undefined);
+        }
     }
-    desktop.push(tmp)
-    return desktop
-  }, [])
-}
+    arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+    return arr; 
+};
+function getUniqueStyles(styles) {
+  var uniqueStyles = [];
+  styles.forEach(function(style){
+    if (uniqueStyles.length === 0) {
+      uniqueStyles.push(style)
+    } else {
+      var found = false;
+      uniqueStyles.forEach(function(sortedStyle){
 
-function writeMobile(mobileStyles) {
-  var sass = "// --- MOBILE TYPE RAMP ---\n"
-  _.forEach(mobileStyles, style => {
-    sass += printStyleHeader(style.name)
-    sass += printStyle(style)
-    sass += "}\n\n"
+        // GET THE [TAG]
+        var tag = getTag(String(sortedStyle.name()))
+        log(String(style.name()).slice(1,tag.length + 1) + " == " + tag)
+        if (String(style.name()).slice(1,tag.length + 1) == tag) {
+          found = true;
+        }
+      })
+      if (!found) {
+        uniqueStyles.push(style)
+      }
+    }
   })
-
-  return sass
+  return uniqueStyles;
 }
 
-function writeDesktop(desktopStyles) {
-  var sass = "// --- DESKTOP TYPE RAMP ---\n"
-  _.forEach(desktopStyles, style => {
-    sass += printStyleHeader(style.name)
-    sass += printStyle(style)
-    sass += "}\n\n"
+function compare(a,b) {
+  if (a.name() < b.name())
+    return -1;
+  if (a.name() > b.name())
+    return 1;
+  return 0;
+}
+function getTag (name) {
+  var tag = name.substring(0, name.indexOf("]") + 1);
+  if (tag.slice(0,1) == "[" && tag.slice(tag.length -1) == "]") {
+    tag = tag.substring(1, tag.length - 1)
+    if (tag.slice(-1).toLowerCase() == "l") {
+      tag = tag.slice(0, -1)
+    }
+  } else {
+    tag = name
+  }
+  return tag
+}
+function stripTag (name) {
+  var tag = String(name.slice(0, String(name.indexOf("]") + 1)));
+  if (tag.slice(0,1) == "[" && tag.slice(tag.length -1) == "]") {
+    tag = tag.slice(1, tag.length - 1)
+  } else {
+    tag = name
+  }
+  return tag
+}
+function hyphenize(str) {
+  return str.replace(/\s+/g, '-').replace(/\.+/g, '-').replace(/\,+/g, '-').toLowerCase();
+}
+function writeTypeStyles(styles) {
+  var output = String("");
+  styles.forEach(function(thisStyle) {
+    var styleName = String(thisStyle.name);
+    if (styleName.slice(3,4) == "L") {
+      styleName = styleName.slice(0,3) + styleName.slice(4);
+    }
+    var tag = stripTag(styleName)
+    output = output.concat("// " + styleName + "\n");
+    output = output.concat("@mixin " + hyphenize(tag) + "-text-style {\n");
+    output = output.concat("  font-family: " + thisStyle.font + ";\n");
+    output = output.concat("  font-size: " + thisStyle.size + "px;\n")
+    output = output.concat("  line-height: " + thisStyle.lineHeight + "px;\n")
+    output = output.concat("  margin: 0 0 " + thisStyle.paragraphSpacing + "px 0;\n")
+    output = output.concat("}\n")
   })
-
-  return sass
-}
-
-function printStyle(style) {
-  var sass = ""
-  _.forEach(_.omit(style, ["name"]), (value, key) => {
-    sass += value ? `\t${key.replace("_", "-")}: ${value};\n` : ""
-  })  
-  return sass
-}
-
-function printStyleHeader(name) {
-  var mixinName = _.lowerCase(name.substring(name.indexOf("["), name.indexOf("]"))).replace(" ", "")
-  var sass = `// ${name} \n`
-  sass += `@mixin ${mixinName}TextStyle {\n`
-  return sass
+  return output
 }

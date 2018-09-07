@@ -12,7 +12,7 @@ export default function(context) {
   const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
   const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap)
   
-  var scss = `${layerStyleSheet}\n${layerTextStyleSheet}`
+  var scss = "" + layerStyleSheet + layerTextStyleSheet
   saveScssToFile(scss)
 }
 
