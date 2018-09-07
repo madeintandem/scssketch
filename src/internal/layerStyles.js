@@ -6,10 +6,15 @@ module.exports = {
     var colors = []
     var shadows = []
     _.forEach(sortedStyles, function(style) {
-      if(String(style.name()).charAt(0) == "[") {
-        addColor(colors, style)
-      } else {
+      var tag = getTag(String(style.name()));
+      if (style.value().shadows().length) {
         addShadow(shadows, style)
+      }
+      else if(tag.isTag && tag.tag.toLowerCase().slice(1,2) == "x") {
+        // do nothing
+      } else {
+        // need to check here for colors with no tag
+        addColor(colors, style)
       }
     })
     
@@ -23,8 +28,9 @@ module.exports = {
 
 function addColor(colorsArray, style) {
   var thisName = String(style.name())
-  thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
-
+  if (getTag(thisName).isTag) {
+    thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
+  }
   var tmp = {
     name: hyphenize(thisName) + "-color",
     value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
@@ -92,4 +98,18 @@ function writeShadows(shadows) {
     styles += `$${shadow.name}: ${shadow.value};\n`
   })
   return styles
+}
+function getTag (name) {
+  var tag = name.slice(0, name.indexOf("]") + 1);
+  var isTag = false
+  if (tag.slice(0,1) == "[" && tag.slice(tag.length -1) == "]") {
+    isTag = true;
+    tag = tag.substring(1, tag.length - 1)
+    if (tag.slice(-1).toLowerCase() == "l") {
+      tag = tag.slice(0, -1)
+    }
+  } else {
+    tag = name
+  }
+  return {isTag: isTag, tag: tag}
 }
