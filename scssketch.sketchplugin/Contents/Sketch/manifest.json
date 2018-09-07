@@ -1,31 +1,31 @@
 {
+  "name": "TAND&M Toolkit",
+  "description": "Custom tools for living the ultimate the TAND&M life",
+  "author": "Sarah Aslanifar, Drew Vosburg, and Max Oppenheimer",
+  "version": "1.0",
+  "identifier": "com.tandem.sketch.tandemTools",
   "compatibleVersion": 3,
   "bundleVersion": 1,
   "icon": "icon.png",
   "commands": [
     {
-      "name": "export to sass",
+      "name": "Export as SCSS...",
       "identifier": "export-to-sass-identifier",
       "script": "export-to-sass.js"
     },
     {
-      "name": "Scale Type Ramp",
+      "name": "Scale Type Ramp...",
       "identifier": "scale-type-ramp-identifier",
       "script": "scale-type-ramp.js"
     }
   ],
   "menu": {
-    "title": "scssketch",
+    "title": "TAND&M Tools",
     "items": [
       "export-to-sass-identifier",
       "scale-type-ramp-identifier"
     ]
   },
-  "version": "0.1.0",
-  "name": "scssketch",
-  "identifier": "scssketch",
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml",
-  "author": "Sarah Aslanifar",
-  "authorEmail": "sarah.aslanifar@devmynd.com"
+  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
 }
