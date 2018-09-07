@@ -17362,18 +17362,25 @@ function addShadow(shadowsArray, style) {
   shadowsArray.push(tmp);
 }
 
-function constructShadowValue(style) {
-  var offsetX = style.firstEnabledShadow().offsetX();
-  var offsetY = style.firstEnabledShadow().offsetY();
-  var blurRadius = style.firstEnabledShadow().blurRadius();
-  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "");
-  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-  rgba = "(";
-  temprgba.forEach(function (value) {
-    rgba = rgba + removeZeros(value) + ", ";
+function constructShadowValue(styles) {
+  log(styles.shadows().length);
+  var result = "";
+
+  _.forEach(styles.shadows(), function (style) {
+    var offsetX = style.offsetX();
+    var offsetY = style.offsetY();
+    var blurRadius = style.blurRadius();
+    var rgba = style.color().toString().replace(/[a-z]|:/g, "");
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "(";
+    temprgba.forEach(function (value) {
+      rgba = rgba + removeZeros(value) + ", ";
+    });
+    rgba = rgba.slice(0, -2) + ")";
+    result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
   });
-  rgba = rgba.slice(0, -2) + ")";
-  return "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba);
+
+  return result.slice(0, -2);
 }
 
 function removeZeros(str) {
@@ -17446,7 +17453,6 @@ module.exports = {
       var tag = getTag(String(thisStyle.name()));
 
       if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "m") {
-        log(tag.tag);
         mobile.push(getTextStyleAsJson(thisStyle));
       } else {
         desktop.push(getTextStyleAsJson(thisStyle));
@@ -17518,7 +17524,6 @@ function getTextStyleAsJson(style) {
     paragraphSpacing: paragraphSpacing,
     underline: String(attributes.NSUnderline) * 1
   };
-  log(style);
   return style;
 }
 

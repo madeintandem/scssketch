@@ -1,7 +1,7 @@
 {
   "name" : "TAND&M Toolkit",
-  "description" : "Custom tools for living the ultimate the TAND&M life",
-  "author" : "Sarah Aslanifar, Drew Vosburg, and Max Oppenheimer",
+  "description" : "Custom tools for living the ultimate the TAND&M life. Built with love and care by Sarah Aslanifar, Drew Vosburg, and Max Oppenheimer",
+  "author" : "TAND&M",
   "version" : "1.0",
   "identifier" : "com.tandem.sketch.tandemTools",
   "compatibleVersion": 3,

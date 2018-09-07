@@ -40,19 +40,23 @@ function addShadow(shadowsArray, style) {
   shadowsArray.push(tmp)
 }
 
-function constructShadowValue(style) {
-  var offsetX = style.firstEnabledShadow().offsetX();
-  var offsetY = style.firstEnabledShadow().offsetY();
-  var blurRadius = style.firstEnabledShadow().blurRadius();
-  var rgba = style.firstEnabledShadow().color().toString().replace(/[a-z]|:/g, "")
-  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-  rgba = "("
-  temprgba.forEach(function(value){
-    rgba = rgba + removeZeros(value) + ", "
+function constructShadowValue(styles) {
+  log(styles.shadows().length)
+  var result = ""
+  _.forEach(styles.shadows(), function(style){
+    var offsetX = style.offsetX();
+    var offsetY = style.offsetY();
+    var blurRadius = style.blurRadius();
+    var rgba = style.color().toString().replace(/[a-z]|:/g, "")
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "("
+    temprgba.forEach(function(value){
+      rgba = rgba + removeZeros(value) + ", "
+    })
+    rgba = rgba.slice(0, -2) + ")"
+    result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `
   })
-  rgba = rgba.slice(0, -2) + ")"
-  
-  return `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}`
+  return result.slice(0,-2)
 }
 function removeZeros(str){
   var regEx1 = /[0]+$/;

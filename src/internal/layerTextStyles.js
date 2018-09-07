@@ -9,7 +9,6 @@ module.exports = {
     typeStyles.forEach(function(thisStyle){
       var tag = getTag(String(thisStyle.name()))
       if(tag.isTag && tag.tag.slice(0,1).toLowerCase() == "m") {
-        log(tag.tag)
         mobile.push(getTextStyleAsJson(thisStyle))
       } else {
         desktop.push(getTextStyleAsJson(thisStyle))
@@ -70,7 +69,6 @@ function getTextStyleAsJson (style) {
     paragraphSpacing: paragraphSpacing,
     underline: String(attributes.NSUnderline) * 1
   };
-  log(style)
   return style;
 }
 function popPToTop (styles) {
