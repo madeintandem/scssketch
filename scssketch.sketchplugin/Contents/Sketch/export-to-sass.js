@@ -17472,6 +17472,7 @@ module.exports = {
   parse: function parse(sharedTextStyles) {
     var desktop = [];
     var mobile = [];
+    var assorted = [];
 
     var sortedStyles = _.sortBy(sharedTextStyles.objects(), [function (style) {
       return style.name();
@@ -17480,16 +17481,20 @@ module.exports = {
     var typeStyles = getUniqueStyles(sortedStyles);
     typeStyles.forEach(function (thisStyle) {
       var tag = getTag(String(thisStyle.name()));
+      var style = getTextStyleAsJson(thisStyle);
 
       if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "m") {
-        mobile.push(getTextStyleAsJson(thisStyle));
+        mobile.push(style);
+      } else if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "d") {
+        desktop.push(style);
       } else {
-        desktop.push(getTextStyleAsJson(thisStyle));
+        assorted.push(style);
       }
     });
     return {
       "desktop": popPToTop(desktop),
-      "mobile": popPToTop(mobile)
+      "mobile": popPToTop(mobile),
+      "assorted": assorted
     };
   },
   writeSass: function writeSass(layerTextStyleMap) {
@@ -17503,7 +17508,11 @@ module.exports = {
       textStyleSheet = textStyleSheet + "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.desktop);
     }
 
-    if (layerTextStyleMap.length > 0) {
+    if (layerTextStyleMap.assorted.length > 0) {
+      textStyleSheet = textStyleSheet + "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.assorted);
+    }
+
+    if (layerTextStyleMap.desktop.length || layerTextStyleMap.mobile.length || layerTextStyleMap.assorted.length) {
       textStyleSheet = "\n// TYPE STYLES\n" + textStyleSheet;
     }
 
