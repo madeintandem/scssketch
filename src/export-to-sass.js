@@ -8,10 +8,8 @@ export default function(context) {
   const layerStyleMap = layerStyles.parse(sharedStyles)
   const layerStyleSheet = layerStyles.writeSass(layerStyleMap)
   
-  log(sharedTextStyles)
   const fontsUsed = layerTextStyles.fontSurvey(sharedTextStyles)
   const fonts = layerTextStyles.determineFontType(fontsUsed)
-  log("fonts == " + fonts)
   const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
   const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap, fonts)
   

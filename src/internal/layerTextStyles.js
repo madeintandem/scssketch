@@ -21,57 +21,61 @@ module.exports = {
       } else {
         assorted.push(style)
       }
-
     })
     return {"desktop": popPToTop(desktop), "mobile": popPToTop(mobile), "assorted": assorted};
   },
   
   writeSass: function (layerTextStyleMap, fonts) {
     var textStyleSheet = "\n// FONT FAMILIES\n"
-    log("fonts == " + fonts.textFont)
-    textStyleSheet += "$text-style: " + fonts.textFont.font + ";\n"
+    textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
     if (fonts.displayFont) {
-      textStyleSheet += "$text-style: " + fonts.displayFont.font + ";\n"
+      textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
     }
     if (fonts.auxiliaryFont) {
-      textStyleSheet += "$text-style: " + fonts.auxiliaryFont.font + ";\n"
+      textStyleSheet += "$auxiliary-font: " + fonts.auxiliaryFont.font + ";\n"
     }
-    textStyleSheet += "$text-style: " + fonts.textFont.font
 
-    if (layerTextStyleMap.mobile.length > 0) {
+    if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) {
       textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.mobile, fonts)
     }
-    if (layerTextStyleMap.desktop.length > 0) {
+    if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
       textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.desktop, fonts)
     }
-    if (layerTextStyleMap.assorted.length > 0) {
+    if (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length > 0) {
       textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.assorted, fonts)
     }
 
-    if (layerTextStyleMap.desktop.length || layerTextStyleMap.mobile.length || layerTextStyleMap.assorted.length) {
+    if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length) || (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length)) {
       textStyleSheet = "\n// TYPE STYLES\n" + textStyleSheet
     }
     return textStyleSheet
   },
   fontSurvey: function (styles) {
     var fonts = []
-    _.forEach(styles.objects(), function(style) {
+    var uniqueStyles = getUniqueStyles(styles.objects())
+    _.forEach(uniqueStyles, function(style) {
       var found = false;
       var isParagraph = false;
-      var tag = getTag(String(style.name())).tag
-      if (tag.slice(0, -1).toLowerCase() == "p") {
-        isParagraph = true
-      }
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute))
+      var tag = getTag(String(style.name())).tag
+      if (tag.slice(-1).toLowerCase() == "p") {
+        isParagraph = true
+      }
+      var fontCount = 0
       _.forEach(fonts, function(foundFont){
         if (foundFont.font == fontName) {
           foundFont.count += 1;
+          if (!foundFont.isParagraph) {
+            foundFont.isParagraph = isParagraph
+          }
+          var fontCount = foundFont.count
           found = true;
         }
       })
       if (!found) {
         fonts.push({"font": fontName, "count": 1, "isParagraph": isParagraph})
+        fontCount = 1;
       }
     })
     return fonts
@@ -80,27 +84,38 @@ module.exports = {
     var displayFont;
     var textFont;
     var auxiliaryFont;
-    var mostUsed;
+    var subArray = foundFonts.slice()
     _.forEach(foundFonts, function(font){
-      if (!font.isParagraph) {
-        if (!mostUsed) {
-          mostUsed = font
-        } else if (font.count > mostUsed.count) {
-          mostUsed = font
+      if ((!textFont && font.isParagraph) || font.font == textFont) {
+        textFont = font
+        var index = subArray.indexOf(font);
+        if (index > -1) {
+          subArray.splice(index, 1);
         }
       }
     })
-    _.forEach(foundFonts, function(font){
-      if ((!textFont && font.isParagraph) || font.font == textFont) {
-        textFont = font.font
-      } else if ((!displayFont && font == mostUsed) || font.font == displayFont) {
-        displayFont = font.font
+    var most = mostUsed(subArray);
+    _.forEach(subArray, function(font){
+      if ((!displayFont && font == most) || font == displayFont) {
+        displayFont = font
       } else {
-        auxiliaryFont = font.font
+        auxiliaryFont = font
       }
     })
-    return {"textFont": textFont, "displayFont": displayFont, "auxiliaryFont": auxiliaryFont}
+    var result = {"textFont": textFont, "displayFont": displayFont, "auxiliaryFont": auxiliaryFont}
+    return result
   }
+}
+function mostUsed(foundFonts) {
+  var most;
+  _.forEach(foundFonts, function(font){
+    if (!most) {
+      most = font
+    } else if (font.count > most.count) {
+      most = font
+    }
+  })
+  return most;
 }
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
@@ -181,38 +196,50 @@ function writeTypeStyles(typeRamp, fonts) {
   if (useRem && typeRamp.hasParagraph) {
     baseFontSize = typeRamp[0].styles.size
   }
-  t.styles.forEach(function(thisStyle) {
+  styles.forEach(function(thisStyle) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName).tag
     if (styleName.slice(3,4) == "L") {
       styleName = styleName.slice(0,3) + styleName.slice(4);
     }
+    tag = hyphenize(tag);
     output += "// " + styleName + "\n";
-    output += "@mixin " + hyphenize(tag) + "-text-style {\n";
+
+    // set vars
     var fontType = "text-font"
     if (fonts.displayFont.font == thisStyle.font) {
       fontType = "display-font"
     } else if (fonts.auxiliaryFont.font == thisStyle.font) {
       fontType = "auxiliary-font"
     }
-    output += "  font-family: $" + fontType + ";\n";
+    output += "$" + tag + "-font-family: $" + fontType + ";\n";
     var fontSize = thisStyle.size + "px";
+    log ("use rem: " + useRem)
     if (useRem) {
-      fontSize = Math.round(thisStyle.size * 1000) / 1000 + "rem"
+      fontSize = Math.round((thisStyle.size / baseFontSize) * 1000) / 1000 + "rem"
     }
-    output += "  font-size: " + fontSize + ";\n";
-    output += "  letter-spacing: " + thisStyle.spacing + "px;\n";
-    output += "  line-height: " + Math.round(thisStyle.lineHeight / thisStyle.size * 100) / 100 + ";\n"
+    output += "$" + tag + "-font-size: " + fontSize + ";\n";
+    output += "$" + tag + "-letter-spacing: " + thisStyle.spacing + "px;\n";
+    output += "$" + tag + "-line-height: " + Math.round(thisStyle.lineHeight / thisStyle.size * 100) / 100 + ";\n"
     var underline = "none"
     if (thisStyle.underline) {
       underline = "underline"
     }
-    output += "  text-decoration: " + underline
+    output += "$" + tag + "-text-decoration: " + underline + ";\n"
     var marginValue = "0";
     if (thisStyle.paragraphSpacing > 0) {
       marginValue = "0 0 " + thisStyle.paragraphSpacing + "px 0";
     }
-    output += "  margin: " + marginValue + ";\n"
+    output += "$" + tag + "-margin: " + marginValue + ";\n"
+
+    // use vars
+    output += "@mixin " + tag + "-text-style {\n";
+    output += "  font-family: $" + tag + "-font-family;\n"
+    output += "  font-size: $" + tag + "-font-size;\n"
+    output += "  letter-spacing: $" + tag + "-letter-spacing;\n"
+    output += "  line-height: $" + tag + "-line-height;\n"
+    output += "  text-decoration: $" + tag + "-text-decoration;\n"
+    output += "  margin: $" + tag + "-margin;\n"
     output += "}\n"
   })
   return output

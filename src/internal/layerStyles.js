@@ -39,8 +39,12 @@ function addColor(colorsArray, style) {
 }
 
 function addShadow(shadowsArray, style) {
+  var thisName = String(style.name())
+  if (getTag(thisName).isTag) {
+    thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
+  }
   tmp = {
-    name: hyphenize(String(style.name())),
+    name: hyphenize(thisName),
     value: constructShadowValue(style.value())
   }
   shadowsArray.push(tmp)
