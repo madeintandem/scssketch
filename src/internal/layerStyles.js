@@ -47,7 +47,6 @@ function addShadow(shadowsArray, style) {
 }
 
 function constructShadowValue(styles) {
-  log(styles.shadows().length)
   var result = ""
   _.forEach(styles.shadows(), function(style){
     var offsetX = style.offsetX();

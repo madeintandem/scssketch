@@ -17284,8 +17284,12 @@ __webpack_require__.r(__webpack_exports__);
   var sharedTextStyles = document.sketchObject.documentData().layerTextStyles();
   var layerStyleMap = layerStyles.parse(sharedStyles);
   var layerStyleSheet = layerStyles.writeSass(layerStyleMap);
+  log(sharedTextStyles);
+  var fontsUsed = layerTextStyles.fontSurvey(sharedTextStyles);
+  var fonts = layerTextStyles.determineFontType(fontsUsed);
+  log("fonts == " + fonts);
   var layerTextStyleMap = layerTextStyles.parse(sharedTextStyles);
-  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap);
+  var layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap, fonts);
   var scss = "" + layerStyleSheet + layerTextStyleSheet;
   saveScssToFile(scss);
 });
@@ -17371,7 +17375,6 @@ function addShadow(shadowsArray, style) {
 }
 
 function constructShadowValue(styles) {
-  log(styles.shadows().length);
   var result = "";
 
   _.forEach(styles.shadows(), function (style) {
@@ -17468,6 +17471,7 @@ function getTag(name) {
 
 var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
+var useRem = true;
 module.exports = {
   parse: function parse(sharedTextStyles) {
     var desktop = [];
@@ -17487,6 +17491,7 @@ module.exports = {
         mobile.push(style);
       } else if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "d") {
         desktop.push(style);
+      } else if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "x") {// do nothing
       } else {
         assorted.push(style);
       }
@@ -17497,19 +17502,31 @@ module.exports = {
       "assorted": assorted
     };
   },
-  writeSass: function writeSass(layerTextStyleMap) {
-    var textStyleSheet = "";
+  writeSass: function writeSass(layerTextStyleMap, fonts) {
+    var textStyleSheet = "\n// FONT FAMILIES\n";
+    log("fonts == " + fonts.textFont);
+    textStyleSheet += "$text-style: " + fonts.textFont.font + ";\n";
+
+    if (fonts.displayFont) {
+      textStyleSheet += "$text-style: " + fonts.displayFont.font + ";\n";
+    }
+
+    if (fonts.auxiliaryFont) {
+      textStyleSheet += "$text-style: " + fonts.auxiliaryFont.font + ";\n";
+    }
+
+    textStyleSheet += "$text-style: " + fonts.textFont.font;
 
     if (layerTextStyleMap.mobile.length > 0) {
-      textStyleSheet = textStyleSheet + "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.mobile);
+      textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.mobile, fonts);
     }
 
     if (layerTextStyleMap.desktop.length > 0) {
-      textStyleSheet = textStyleSheet + "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.desktop);
+      textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.desktop, fonts);
     }
 
     if (layerTextStyleMap.assorted.length > 0) {
-      textStyleSheet = textStyleSheet + "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.assorted);
+      textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(layerTextStyleMap.assorted, fonts);
     }
 
     if (layerTextStyleMap.desktop.length || layerTextStyleMap.mobile.length || layerTextStyleMap.assorted.length) {
@@ -17517,28 +17534,89 @@ module.exports = {
     }
 
     return textStyleSheet;
+  },
+  fontSurvey: function fontSurvey(styles) {
+    var fonts = [];
+
+    _.forEach(styles.objects(), function (style) {
+      var found = false;
+      var isParagraph = false;
+      var tag = getTag(String(style.name())).tag;
+
+      if (tag.slice(0, -1).toLowerCase() == "p") {
+        isParagraph = true;
+      }
+
+      var attributes = style.style().textStyle().attributes();
+      var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute));
+
+      _.forEach(fonts, function (foundFont) {
+        if (foundFont.font == fontName) {
+          foundFont.count += 1;
+          found = true;
+        }
+      });
+
+      if (!found) {
+        fonts.push({
+          "font": fontName,
+          "count": 1,
+          "isParagraph": isParagraph
+        });
+      }
+    });
+
+    return fonts;
+  },
+  determineFontType: function determineFontType(foundFonts) {
+    var displayFont;
+    var textFont;
+    var auxiliaryFont;
+    var mostUsed;
+
+    _.forEach(foundFonts, function (font) {
+      if (!font.isParagraph) {
+        if (!mostUsed) {
+          mostUsed = font;
+        } else if (font.count > mostUsed.count) {
+          mostUsed = font;
+        }
+      }
+    });
+
+    _.forEach(foundFonts, function (font) {
+      if (!textFont && font.isParagraph || font.font == textFont) {
+        textFont = font.font;
+      } else if (!displayFont && font == mostUsed || font.font == displayFont) {
+        displayFont = font.font;
+      } else {
+        auxiliaryFont = font.font;
+      }
+    });
+
+    return {
+      "textFont": textFont,
+      "displayFont": displayFont,
+      "auxiliaryFont": auxiliaryFont
+    };
   }
 };
 
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
   styles.forEach(function (style) {
-    if (uniqueStyles.length === 0) {
-      uniqueStyles.push(style);
-    } else {
-      var found = false;
-      uniqueStyles.forEach(function (sortedStyle) {
-        // GET THE [TAG]
-        var tag = getTag(String(sortedStyle.name())).tag;
+    var found = false;
+    uniqueStyles.forEach(function (sortedStyle) {
+      // GET THE [TAG]
+      var tag = getTag(String(sortedStyle.name())).tag;
 
-        if (String(style.name()).slice(1, tag.length + 1) == tag) {
-          found = true;
-        }
-      });
-
-      if (!found) {
-        uniqueStyles.push(style);
+      if (String(style.name()).slice(1, tag.length + 1) == tag) {
+        found = true;
       }
+    });
+
+    if (!found) {
+      uniqueStyles.push(style);
     }
   });
   return uniqueStyles;
@@ -17566,6 +17644,7 @@ function getTextStyleAsJson(style) {
 }
 
 function popPToTop(styles) {
+  var hasParagraph = false;
   styles.forEach(function (style, indx) {
     var tag = getTag(style.name);
 
@@ -17573,7 +17652,10 @@ function popPToTop(styles) {
       array_move(styles, indx, 0);
     }
   });
-  return styles;
+  return {
+    "styles": styles,
+    "hasParagraph": hasParagraph
+  };
 }
 
 function array_move(arr, old_index, new_index) {
@@ -17616,9 +17698,16 @@ function hyphenize(str) {
   return String(str).replace(/\s+/g, '-').replace(/\.+/g, '-').replace(/\,+/g, '-').toLowerCase();
 }
 
-function writeTypeStyles(styles) {
-  var output = String("");
-  styles.forEach(function (thisStyle) {
+function writeTypeStyles(typeRamp, fonts) {
+  var output = String(""),
+      styles = typeRamp.styles,
+      baseFontSize = 16;
+
+  if (useRem && typeRamp.hasParagraph) {
+    baseFontSize = typeRamp[0].styles.size;
+  }
+
+  t.styles.forEach(function (thisStyle) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName).tag;
 
@@ -17628,19 +17717,32 @@ function writeTypeStyles(styles) {
 
     output += "// " + styleName + "\n";
     output += "@mixin " + hyphenize(tag) + "-text-style {\n";
-    output += "  font-family: " + thisStyle.font + ";\n";
-    output += "  font-size: " + thisStyle.size + "px;\n";
+    var fontType = "text-font";
 
-    if (thisStyle.spacing) {
-      output += "  letter-spacing: " + thisStyle.spacing + "px;\n";
+    if (fonts.displayFont.font == thisStyle.font) {
+      fontType = "display-font";
+    } else if (fonts.auxiliaryFont.font == thisStyle.font) {
+      fontType = "auxiliary-font";
     }
 
-    output += "  line-height: " + thisStyle.lineHeight + "px;\n";
-    var marginValue = "0";
+    output += "  font-family: $" + fontType + ";\n";
+    var fontSize = thisStyle.size + "px";
+
+    if (useRem) {
+      fontSize = Math.round(thisStyle.size * 1000) / 1000 + "rem";
+    }
+
+    output += "  font-size: " + fontSize + ";\n";
+    output += "  letter-spacing: " + thisStyle.spacing + "px;\n";
+    output += "  line-height: " + Math.round(thisStyle.lineHeight / thisStyle.size * 100) / 100 + ";\n";
+    var underline = "none";
 
     if (thisStyle.underline) {
-      output += "  text-decoration: underline";
+      underline = "underline";
     }
+
+    output += "  text-decoration: " + underline;
+    var marginValue = "0";
 
     if (thisStyle.paragraphSpacing > 0) {
       marginValue = "0 0 " + thisStyle.paragraphSpacing + "px 0";

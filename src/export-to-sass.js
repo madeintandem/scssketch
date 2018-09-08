@@ -5,12 +5,15 @@ export default function(context) {
   const document = sketch.selectedDocument
   const sharedStyles = document.sketchObject.documentData().layerStyles()
   const sharedTextStyles = document.sketchObject.documentData().layerTextStyles()
-  
   const layerStyleMap = layerStyles.parse(sharedStyles)
   const layerStyleSheet = layerStyles.writeSass(layerStyleMap)
   
+  log(sharedTextStyles)
+  const fontsUsed = layerTextStyles.fontSurvey(sharedTextStyles)
+  const fonts = layerTextStyles.determineFontType(fontsUsed)
+  log("fonts == " + fonts)
   const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
-  const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap)
+  const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap, fonts)
   
   var scss = "" + layerStyleSheet + layerTextStyleSheet
   saveScssToFile(scss)
