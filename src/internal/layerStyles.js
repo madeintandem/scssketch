@@ -7,7 +7,7 @@ module.exports = {
     var shadows = []
     _.forEach(sortedStyles, function(style) {
       var tag = getTag(String(style.name()));
-      if (style.value().shadows().length) {
+      if (style.value().shadows().length || style.value().innerShadows().length) {
         addShadow(shadows, style)
       }
       else if(tag.isTag && tag.tag.toLowerCase().slice(1,2) == "x") {
@@ -37,7 +37,6 @@ function addColor(colorsArray, style) {
   }
   colorsArray.push(tmp)
 }
-
 function addShadow(shadowsArray, style) {
   var thisName = String(style.name())
   if (getTag(thisName).isTag) {
@@ -45,27 +44,34 @@ function addShadow(shadowsArray, style) {
   }
   tmp = {
     name: hyphenize(thisName),
-    value: constructShadowValue(style.value())
+    value: getShadows(style.value())
   }
   shadowsArray.push(tmp)
 }
-
-function constructShadowValue(styles) {
+function getShadows(styles) {
   var result = ""
   _.forEach(styles.shadows(), function(style){
-    var offsetX = style.offsetX();
-    var offsetY = style.offsetY();
-    var blurRadius = style.blurRadius();
-    var rgba = style.color().toString().replace(/[a-z]|:/g, "")
-    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-    rgba = "("
-    temprgba.forEach(function(value){
-      rgba = rgba + removeZeros(value) + ", "
-    })
-    rgba = rgba.slice(0, -2) + ")"
-    result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `
+    result += constructShadowValue(style)
+  })
+  _.forEach(styles.innerShadows(), function(style){
+    result += constructShadowValue(style)
   })
   return result.slice(0,-2)
+}
+function constructShadowValue(style) {
+  result = ""
+  var offsetX = style.offsetX();
+  var offsetY = style.offsetY();
+  var blurRadius = style.blurRadius();
+  var rgba = style.color().toString().replace(/[a-z]|:/g, "")
+  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+  rgba = "("
+  temprgba.forEach(function(value){
+    rgba = rgba + removeZeros(value) + ", "
+  })
+  rgba = rgba.slice(0, -2) + ")"
+  result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `
+  return result
 }
 function removeZeros(str){
   var regEx1 = /[0]+$/;

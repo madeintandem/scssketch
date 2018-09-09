@@ -17331,7 +17331,7 @@ module.exports = {
     _.forEach(sortedStyles, function (style) {
       var tag = getTag(String(style.name()));
 
-      if (style.value().shadows().length) {
+      if (style.value().shadows().length || style.value().innerShadows().length) {
         addShadow(shadows, style);
       } else if (tag.isTag && tag.tag.toLowerCase().slice(1, 2) == "x") {// do nothing
       } else {
@@ -17393,6 +17393,20 @@ function constructShadowValue(styles) {
     });
     rgba = rgba.slice(0, -2) + ")";
     result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
+  });
+
+  _.forEach(styles.innerShadows(), function (style) {
+    var offsetX = style.offsetX();
+    var offsetY = style.offsetY();
+    var blurRadius = style.blurRadius();
+    var rgba = style.color().toString().replace(/[a-z]|:/g, "");
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "(";
+    temprgba.forEach(function (value) {
+      rgba = rgba + removeZeros(value) + ", ";
+    });
+    rgba = rgba.slice(0, -2) + ")";
+    result += "inset ".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
   });
 
   return result.slice(0, -2);
