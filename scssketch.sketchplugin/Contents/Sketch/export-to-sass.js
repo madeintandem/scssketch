@@ -17333,9 +17333,7 @@ module.exports = {
 
       if (style.value().shadows().length || style.value().innerShadows().length) {
         addShadow(shadows, style);
-      } else if (tag.isTag && tag.tag.toLowerCase().slice(1, 2) == "x") {// do nothing
-      } else {
-        // need to check here for colors with no tag
+      } else if (tag.isTag && tag.ramp != "x") {
         addColor(colors, style);
       }
     });
@@ -17346,7 +17344,7 @@ module.exports = {
     };
   },
   writeSass: function writeSass(layerStyleMap) {
-    return "".concat(writeColors(layerStyleMap.colors), "\n").concat(writeShadows(layerStyleMap.shadows));
+    return "".concat(writeColors(layerStyleMap.colors)).concat(writeShadows(layerStyleMap.shadows));
   }
 };
 
@@ -17373,43 +17371,39 @@ function addShadow(shadowsArray, style) {
 
   tmp = {
     name: hyphenize(thisName),
-    value: constructShadowValue(style.value())
+    value: getShadows(style.value())
   };
   shadowsArray.push(tmp);
 }
 
-function constructShadowValue(styles) {
+function getShadows(styles) {
   var result = "";
 
   _.forEach(styles.shadows(), function (style) {
-    var offsetX = style.offsetX();
-    var offsetY = style.offsetY();
-    var blurRadius = style.blurRadius();
-    var rgba = style.color().toString().replace(/[a-z]|:/g, "");
-    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-    rgba = "(";
-    temprgba.forEach(function (value) {
-      rgba = rgba + removeZeros(value) + ", ";
-    });
-    rgba = rgba.slice(0, -2) + ")";
-    result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
+    result += constructShadowValue(style);
   });
 
   _.forEach(styles.innerShadows(), function (style) {
-    var offsetX = style.offsetX();
-    var offsetY = style.offsetY();
-    var blurRadius = style.blurRadius();
-    var rgba = style.color().toString().replace(/[a-z]|:/g, "");
-    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-    rgba = "(";
-    temprgba.forEach(function (value) {
-      rgba = rgba + removeZeros(value) + ", ";
-    });
-    rgba = rgba.slice(0, -2) + ")";
-    result += "inset ".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
+    result += constructShadowValue(style);
   });
 
   return result.slice(0, -2);
+}
+
+function constructShadowValue(style) {
+  result = "";
+  var offsetX = style.offsetX();
+  var offsetY = style.offsetY();
+  var blurRadius = style.blurRadius();
+  var rgba = style.color().toString().replace(/[a-z]|:/g, "");
+  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+  rgba = "(";
+  temprgba.forEach(function (value) {
+    rgba = rgba + removeZeros(value) + ", ";
+  });
+  rgba = rgba.slice(0, -2) + ")";
+  result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
+  return result;
 }
 
 function removeZeros(str) {
@@ -17434,11 +17428,13 @@ function writeColors(colors) {
 
   if (colors.length > 0) {
     styles = styles + "// COLORS\n";
-  }
 
-  _.forEach(colors, function (color) {
-    styles += "$".concat(color.name, ": ").concat(color.value, ";\n");
-  });
+    _.forEach(colors, function (color) {
+      styles += "$".concat(color.name, ": ").concat(color.value, ";\n");
+    });
+
+    styles += "\n";
+  }
 
   return styles;
 }
@@ -17448,11 +17444,13 @@ function writeShadows(shadows) {
 
   if (shadows.length) {
     styles = styles + "// SHADOWS\n";
-  }
 
-  _.forEach(shadows, function (shadow) {
-    styles += "$".concat(shadow.name, ": ").concat(shadow.value, ";\n");
-  });
+    _.forEach(shadows, function (shadow) {
+      styles += "$".concat(shadow.name, ": ").concat(shadow.value, ";\n");
+    });
+
+    styles += "\n";
+  }
 
   return styles;
 }
@@ -17509,11 +17507,11 @@ module.exports = {
       var tag = getTag(String(thisStyle.name()));
       var style = getTextStyleAsJson(thisStyle);
 
-      if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "m") {
+      if (tag.ramp == "m") {
         mobile.push(style);
-      } else if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "d") {
+      } else if (tag.ramp == "d") {
         desktop.push(style);
-      } else if (tag.isTag && tag.tag.slice(0, 1).toLowerCase() == "x") {// do nothing
+      } else if (tag.ramp == "x") {// do nothing
       } else {
         assorted.push(style);
       }
@@ -17530,7 +17528,7 @@ module.exports = {
     var textStyleSheet = "";
 
     if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length || layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length || layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length) {
-      textStyleSheet += "\n// TYPE STYLES\n\n// FONT FAMILIES\n";
+      textStyleSheet += "// FONT FAMILIES\n";
 
       if (fonts.textFont) {
         textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n";
@@ -17542,7 +17540,7 @@ module.exports = {
 
       if (fonts.auxiliaryFont && fonts.auxiliaryFont.length > 0) {
         _.forEach(fonts.auxiliaryFont, function (font) {
-          textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.font.font + ";\n";
+          textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n";
         });
       } // - mobile and desktop sizes [HAPPY PATH]
 
@@ -17576,11 +17574,11 @@ module.exports = {
       var isParagraph = false;
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute));
-      var tag = getTag(String(style.name())).tag;
+      var tag = getTag(String(style.name()));
       var attributes = style.style().textStyle().attributes();
       var smallestSize = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)) * 1;
 
-      if (tag.slice(-1).toLowerCase() == "p") {
+      if (tag.isTag && tag.selector == "p") {
         isParagraph = true;
       }
 
@@ -17672,7 +17670,7 @@ module.exports = {
         } else {
           auxiliaryFont.push({
             "index": auxiliaryFont.length,
-            "font": font
+            "fontObject": font
           });
         }
       });
@@ -17725,12 +17723,10 @@ function mostUsed(foundFonts) {
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
   styles.forEach(function (style) {
+    // log(String(style.name()) + " => " + getTag(String(style.name())).tag)
     var found = false;
     uniqueStyles.forEach(function (sortedStyle) {
-      // GET THE [TAG]
-      var tag = getTag(String(sortedStyle.name())).tag;
-
-      if (String(style.name()).slice(1, tag.length + 1) == tag) {
+      if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
         found = true;
       }
     });
@@ -17738,7 +17734,8 @@ function getUniqueStyles(styles) {
     if (!found) {
       uniqueStyles.push(style);
     }
-  });
+  }); // log(uniqueStyles)
+
   return uniqueStyles;
 }
 
@@ -17766,9 +17763,7 @@ function getTextStyleAsJson(style) {
 function popPToTop(styles) {
   var hasParagraph = false;
   styles.forEach(function (style, indx) {
-    var tag = getTag(style.name);
-
-    if (tag.isTag && tag.tag.slice(-1).toLowerCase() == "p") {
+    if (getTag(String(style.name)).selector == "p") {
       array_move(styles, indx, 0);
       hasParagraph = true;
     }
@@ -17795,28 +17790,34 @@ function array_move(arr, old_index, new_index) {
 ;
 
 function getTag(name) {
-  var tag = name.slice(0, name.indexOf("]") + 1);
-  var isTag = false;
+  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\].*/g,
+      tag = name,
+      isTag = false,
+      match = regex.exec(name.toLowerCase()),
+      ramp,
+      selector,
+      variant;
 
-  if (tag.slice(0, 1) == "[" && tag.slice(tag.length - 1) == "]") {
+  if (match) {
     isTag = true;
-    tag = tag.substring(1, tag.length - 1);
+    tag = match[1].toLowerCase();
+    ramp = match[2].toLowerCase();
+    selector = match[3].toLowerCase();
+    variant = match[4];
+  } // log("tag == " + tag)
 
-    if (tag.slice(-1).toLowerCase() == "l") {
-      tag = tag.slice(0, -1);
-    }
-  } else {
-    tag = name;
-  }
 
   return {
-    isTag: isTag,
-    tag: tag
+    "isTag": isTag,
+    "tag": tag,
+    "ramp": ramp,
+    "selector": selector,
+    "variant": variant
   };
 }
 
 function hyphenize(str) {
-  return String(str).replace(/\s+/g, '-').replace(/\.+/g, '-').replace(/\,+/g, '-').toLowerCase();
+  return String(str).replace(/\s\.\,]+/g, '-').toLowerCase();
 }
 
 function writeOneTypeStyle(typeRamp, fonts) {
@@ -17832,18 +17833,21 @@ function writeOneTypeStyle(typeRamp, fonts) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
 
-    if (tag.isTag && styleName.slice(tag.tag.length + 1, tag.tag.length + 2).toLowerCase() == "l") {
-      styleName = styleName.slice(0, tag.tag.length + 1) + styleName.slice(tag.tag.length + 2);
+    if (tag.isTag && tag.variant) {
+      styleName = styleName.slice(0, styleName.indexOf(tag.variant)) + styleName.slice(styleName.indexOf(tag.variant) + tag.variant.length);
     }
 
-    tag.tag = hyphenize(tag.tag).toLowerCase();
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
+    }
+
     output += "// " + styleName + "\n"; // set vars
 
     output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts); // use vars
 
     var labelTextStyle = "-text-style";
 
-    if (tag.tag.slice(-5).toLowerCase() == "style") {
+    if (!tag.isTag && tag.tag.slice(-5).toLowerCase() == "style") {
       labelTextStyle = "";
     }
 
@@ -17863,20 +17867,23 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
 
-    if (tag.isTag && styleName.slice(tag.tag.length + 1, tag.tag.length + 2).toLowerCase() == "l") {
-      styleName = styleName.slice(0, tag.tag.length + 1) + styleName.slice(tag.tag.length + 2);
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
     }
 
-    tag.tag = hyphenize(tag.tag);
     var desktopTag;
-    var desktopStyleName; // replace "m" with "h"
+    var desktopStyleName;
 
-    if (tag.isTag) {
-      if (styleName.charAt(2).toLowerCase() == "p") {
-        styleName = styleName.slice(0, 1) + styleName.slice(2);
-      } else {
-        styleName = styleName.slice(0, 1) + "H" + styleName.slice(2);
-      }
+    if (tag.isTag && tag.variant) {
+      log(styleName + " and tagVariant = " + tag.variant + " and indexOf = " + styleName.toLowerCase().indexOf(tag.variant));
+      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
+    } // replace "m" with "h"
+
+
+    if (tag.isTag && tag.selector == "p") {
+      styleName = styleName.slice(0, 1) + styleName.slice(2);
+    } else if (tag.isTag) {
+      styleName = styleName.slice(0, 1) + "H" + styleName.slice(2);
     }
 
     output += "// " + styleName + "\n"; // find a counterpart desktop style
@@ -17888,13 +17895,13 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
       desktopStyleName = String(desktopStyle.name);
       desktopTag = getTag(desktopStyleName);
 
-      if (desktopTag.isTag && desktopStyleName.slice(desktopTag.tag.length + 1, desktopTag.tag.length + 2).toLowerCase() == "l") {
-        desktopStyleName = desktopStyleName.slice(0, desktopTag.tag.length + 1) + desktopStyleName.slice(desktopTag.tag.length + 2);
+      if (desktopTag.isTag && desktopTag.variant) {
+        desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
       }
 
-      desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
+      if (!desktopTag.isTag) desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
 
-      if (desktopTag.isTag && tag.isTag && tag.tag.slice(1) == desktopTag.tag.slice(1) && !found) {
+      if (tag.isTag && desktopTag.selector == tag.selector && !found) {
         found = true;
         thisDesktopStyle = desktopStyle;
         var index = exceptionDesktopStyles.indexOf(thisDesktopStyle);
@@ -17912,8 +17919,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
       fontType = "display-font";
     } else {
       _.forEach(fonts.auxiliaryFont, function (font) {
-        //  VVVVVVVVVVVVVV---- I AM DYING WITH THIS LOLOLOL
-        if (thisStyle.font == font.font.font) {
+        if (thisStyle.font == font.fontObject.font) {
           fontType = "auxiliary-font-" + String(font.index + 1);
         }
       });
@@ -17960,8 +17966,13 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
 
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
-      tag = getTag(styleName),
-      pre = "$" + hyphenize(tag.tag).toLowerCase(),
+      tag = getTag(styleName);
+
+  if (!tag.isTag) {
+    tag.tag = hyphenize(tag.tag);
+  }
+
+  var pre = "$" + tag.tag,
       output = "";
   fontType = "text-font";
 
@@ -17969,8 +17980,7 @@ function outputSetupVars(style, baseSize, fonts) {
     fontType = "display-font";
   } else {
     _.forEach(fonts.auxiliaryFont, function (font) {
-      //  VVVVVVVVVVVVVV---- I AM DYING WITH THIS LOLOLOL
-      if (style.font == font.font.font) {
+      if (style.font == font.fontObject.font) {
         fontType = "auxiliary-font-" + String(font.index + 1);
       }
     });

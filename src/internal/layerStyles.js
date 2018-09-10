@@ -10,10 +10,7 @@ module.exports = {
       if (style.value().shadows().length || style.value().innerShadows().length) {
         addShadow(shadows, style)
       }
-      else if(tag.isTag && tag.tag.toLowerCase().slice(1,2) == "x") {
-        // do nothing
-      } else {
-        // need to check here for colors with no tag
+      else if(tag.isTag && tag.ramp != "x") {
         addColor(colors, style)
       }
     })
@@ -22,7 +19,7 @@ module.exports = {
   },
   
   writeSass: (layerStyleMap) => {
-    return `${writeColors(layerStyleMap.colors)}\n${writeShadows(layerStyleMap.shadows)}`
+    return `${writeColors(layerStyleMap.colors)}${writeShadows(layerStyleMap.shadows)}`
   }
 }
 
@@ -91,10 +88,11 @@ function writeColors(colors) {
   var styles = ""
   if (colors.length > 0) {
     styles = styles +"// COLORS\n"
+    _.forEach(colors, (color) => {
+      styles += `$${color.name}: ${color.value};\n`
+    })
+    styles += "\n"
   }
-  _.forEach(colors, (color) => {
-    styles += `$${color.name}: ${color.value};\n`
-  })
   return styles
 }
 
@@ -102,10 +100,11 @@ function writeShadows(shadows) {
   var styles = ""
   if (shadows.length) {
     styles = styles + "// SHADOWS\n"
+    _.forEach(shadows, (shadow) => {
+      styles += `$${shadow.name}: ${shadow.value};\n`
+    })
+    styles += "\n"
   }
-  _.forEach(shadows, (shadow) => {
-    styles += `$${shadow.name}: ${shadow.value};\n`
-  })
   return styles
 }
 function getTag (name) {
