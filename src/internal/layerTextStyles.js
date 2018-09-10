@@ -163,7 +163,7 @@ function setBaseFontSize (mobileRamp, desktopRamp) {
   }
   var output = "\n// BASE FONT SIZE\n@mixin baseFontSize {\n"
   // mobile base font size
-  output += "font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
+  output += "  font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
   output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
   output += "  & {\n"
   output += "    font-size: " + Math.round(desktopBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
@@ -245,16 +245,20 @@ function getTag (name) {
       match = regex.exec(name.toLowerCase()),
       ramp,
       selector,
-      variant
+      variant,
+      cssSelector
   if (match) {
     isTag = true
     tag = match[1].toLowerCase()
     ramp = match[2].toLowerCase()
-    selector = match[3].toLowerCase(  )
+    selector = match[3].toLowerCase()
+    cssSelector = match[3].toLowerCase()
+    if (cssSelector != "p") {
+      cssSelector = "h" + selector
+    }
     variant = match[4]
   }
-  // log("tag == " + tag)
-  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "variant": variant}
+  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }
 function hyphenize(str) {
   return String(str).replace(/\s\.\,]+/g, '-').toLowerCase();
@@ -264,7 +268,7 @@ function writeOneTypeStyle(typeRamp, fonts) {
       styles = typeRamp.styles,
       baseFontSize = mobileBaseFontSize;
   if (useRem && typeRamp.hasParagraph) {
-    baseFontSize = typeRamp[0].styles.size
+    baseFontSize = typeRamp.styles[0].size
   }
   styles.forEach(function(thisStyle) {
     var styleName = String(thisStyle.name);
@@ -284,7 +288,7 @@ function writeOneTypeStyle(typeRamp, fonts) {
     if (!tag.isTag && tag.tag.slice(-5).toLowerCase() == "style") {
       labelTextStyle = ""
     }
-    output += "@mixin " + tag.tag + labelTextStyle + " {\n";
+    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
     output += outputMixin(tag.tag, 0)
     output += "}\n"
   })
@@ -359,7 +363,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     if (tag.tag.slice(-5).toLowerCase() == "style") {
       labelTextStyle = ""
     }
-    output += "@mixin " + tag.tag + labelTextStyle + " {\n";
+    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
     output += outputMixin(tag.tag, 0)
 
     // if desktop, use media query and desktop vars
@@ -405,7 +409,7 @@ function outputSetupVars(style, baseSize, fonts) {
     fontSize = Math.round((style.size / baseSize) * 1000) / 1000 + "rem"
   }
   output += pre + "-font-size: " + fontSize + ";\n";
-  output += pre + "-letter-spacing: " + style.spacing + "px;\n";
+  output += pre + "-letter-spacing: " + parseFloat(style.spacing) + "px;\n";
   output += pre + "-line-height: " + Math.round(style.lineHeight / style.size * 100) / 100 + ";\n"
   var underline = "none"
   if (style.underline) {

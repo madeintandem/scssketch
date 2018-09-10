@@ -17696,7 +17696,7 @@ function setBaseFontSize(mobileRamp, desktopRamp) {
 
   var output = "\n// BASE FONT SIZE\n@mixin baseFontSize {\n"; // mobile base font size
 
-  output += "font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n";
+  output += "  font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n";
   output += "  @media screen and (min-width: " + breakpointVariable + ") {\n";
   output += "  & {\n";
   output += "    font-size: " + Math.round(desktopBaseFontSize / defaultBaseFontSize * 100) + "%;\n";
@@ -17796,22 +17796,29 @@ function getTag(name) {
       match = regex.exec(name.toLowerCase()),
       ramp,
       selector,
-      variant;
+      variant,
+      cssSelector;
 
   if (match) {
     isTag = true;
     tag = match[1].toLowerCase();
     ramp = match[2].toLowerCase();
     selector = match[3].toLowerCase();
-    variant = match[4];
-  } // log("tag == " + tag)
+    cssSelector = match[3].toLowerCase();
 
+    if (cssSelector != "p") {
+      cssSelector = "h" + selector;
+    }
+
+    variant = match[4];
+  }
 
   return {
     "isTag": isTag,
     "tag": tag,
     "ramp": ramp,
     "selector": selector,
+    "cssSelector": cssSelector,
     "variant": variant
   };
 }
@@ -17826,7 +17833,7 @@ function writeOneTypeStyle(typeRamp, fonts) {
       baseFontSize = mobileBaseFontSize;
 
   if (useRem && typeRamp.hasParagraph) {
-    baseFontSize = typeRamp[0].styles.size;
+    baseFontSize = typeRamp.styles[0].size;
   }
 
   styles.forEach(function (thisStyle) {
@@ -17851,7 +17858,7 @@ function writeOneTypeStyle(typeRamp, fonts) {
       labelTextStyle = "";
     }
 
-    output += "@mixin " + tag.tag + labelTextStyle + " {\n";
+    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
     output += outputMixin(tag.tag, 0);
     output += "}\n";
   });
@@ -17938,7 +17945,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
       labelTextStyle = "";
     }
 
-    output += "@mixin " + tag.tag + labelTextStyle + " {\n";
+    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
     output += outputMixin(tag.tag, 0); // if desktop, use media query and desktop vars
 
     if (thisDesktopStyle) {
@@ -17993,7 +18000,7 @@ function outputSetupVars(style, baseSize, fonts) {
   }
 
   output += pre + "-font-size: " + fontSize + ";\n";
-  output += pre + "-letter-spacing: " + style.spacing + "px;\n";
+  output += pre + "-letter-spacing: " + parseFloat(style.spacing) + "px;\n";
   output += pre + "-line-height: " + Math.round(style.lineHeight / style.size * 100) / 100 + ";\n";
   var underline = "none";
 
