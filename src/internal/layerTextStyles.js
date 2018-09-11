@@ -46,20 +46,20 @@ module.exports = {
       // - mobile and desktop sizes [HAPPY PATH]
       if ((layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) && (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0)) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile, layerTextStyleMap.desktop)
-        textStyleSheet += writeTwoTypeStyles(layerTextStyleMap.mobile, layerTextStyleMap.desktop, fonts)
+        textStyleSheet += writeTypeStyles(fonts, layerTextStyleMap.mobile, layerTextStyleMap.desktop)
       // - mobile sizes only
       } else if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile)
-        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.mobile, fonts)
+        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.mobile)
       // - desktop sizes only
       } else if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.desktop)
-        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.desktop, fonts)
+        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.desktop)
       }
       // - assorted styles (separate, as is)
       if (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.assorted)
-        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.assorted, fonts)
+        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.assorted)
       }
     }
     return textStyleSheet
@@ -186,7 +186,6 @@ function mostUsed(foundFonts) {
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
   styles.forEach(function(style){
-    // log(String(style.name()) + " => " + getTag(String(style.name())).tag)
     var found = false;
     uniqueStyles.forEach(function(sortedStyle){
       if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
@@ -197,7 +196,6 @@ function getUniqueStyles(styles) {
       uniqueStyles.push(style)
     }
   })
-  // log(uniqueStyles)
   return uniqueStyles;
 }
 function getTextStyleAsJson (style) {
@@ -260,56 +258,29 @@ function getTag (name) {
   }
   return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }
-function hyphenize(str) {
-  return String(str).replace(/\s\.\,]+/g, '-').toLowerCase();
+function hyphenize (str) {
+  return String(str).replace(/[\.\,\s]/g, '_').toLowerCase();
 }
-function writeOneTypeStyle(typeRamp, fonts) {
-  var output = String(""),
-      styles = typeRamp.styles,
-      baseFontSize = mobileBaseFontSize;
-  if (useRem && typeRamp.hasParagraph) {
-    baseFontSize = typeRamp.styles[0].size
-  }
-  styles.forEach(function(thisStyle) {
-    var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-    if (tag.isTag && tag.variant) {
-      styleName = styleName.slice(0, styleName.indexOf(tag.variant)) + styleName.slice(styleName.indexOf(tag.variant) + tag.variant.length);
-    }
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-    output += "// " + styleName + "\n";
-
-    // set vars
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
-    // use vars
-    var labelTextStyle = "-text-style";
-    if (!tag.isTag && tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = ""
-    }
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0)
-    output += "}\n"
-  })
-  return output
-}
-function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
-  var output = String(""),
+function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
+  var output = "",
+      isResponsive = false,
       mobileStyles = mobileTypeRamp.styles,
-      desktopStyles = desktopTypeRamp.styles;
-      exceptionDesktopStyles = desktopTypeRamp.styles.slice()
+      desktopStyles = [],
+      exceptionDesktopStyles = [];
+      if (desktopTypeRamp) {
+        desktopStyles = desktopTypeRamp.styles,
+        exceptionDesktopStyles = desktopStyles.slice()
+      }
 
   mobileStyles.forEach(function(thisStyle) {
+    var desktopTag;
+    var desktopStyleName;
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
     if (!tag.isTag) {
       tag.tag = hyphenize(tag.tag);
     }
-    var desktopTag;
-    var desktopStyleName;
     if (tag.isTag && tag.variant) {
-    log(styleName + " and tagVariant = " + tag.variant + " and indexOf = " + styleName.toLowerCase().indexOf(tag.variant))
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
     }
     // replace "m" with "h"
@@ -322,7 +293,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     // find a counterpart desktop style
     var found = false;
     var thisDesktopStyle
-    _.forEach(desktopTypeRamp.styles, function(desktopStyle) {
+    _.forEach(desktopStyles, function(desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
       desktopTag = getTag(desktopStyleName);
       if (desktopTag.isTag && desktopTag.variant) {
@@ -357,41 +328,38 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     // if desktop, set desktop vars
     if (thisDesktopStyle) {
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts)
+      isResponsive = true
     }
-    // use vars
-    var labelTextStyle = "-text-style"
-    if (tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = ""
-    }
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0)
-
-    // if desktop, use media query and desktop vars
-    if (thisDesktopStyle) {
-      output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-      output += "    & {\n"
-      output += outputMixin(desktopTag.tag, 4)
-      output += "    }\n"
-      output += "  }\n"
-    }
-    // end mixin
-    output += "}\n"
+    // give me those sweet sweet mixins
+    output += outputMixin(tag, 0, isResponsive)
   })
-  // write exception desktop styles 
-  if (exceptionDesktopStyles.length > 0) {
-    output += "// ORPHANED DESKTOP STYLES"
-  }
-  exceptionDesktopStyles = {"styles": exceptionDesktopStyles};
-  output += writeOneTypeStyle(exceptionDesktopStyles, fonts)
-  return output
+  _.forEach(exceptionDesktopStyles, function(thisStyle) {
+    var styleName = String(thisStyle.name);
+    var tag = getTag(styleName);
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
+    }
+    if (tag.isTag && tag.variant) {
+      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
+    }
+    // replace "m" with "h"
+    if (tag.isTag && tag.selector == "p") {
+      styleName = styleName.slice(0,1) + styleName.slice(2)
+    } else if (tag.isTag) {
+      styleName = styleName.slice(0,1) + "H" + styleName.slice(2)
+    }
+    output += "// " + styleName + "\n";
+
+    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+    output += outputMixin(tag, 0, false)
+  })
+  return output;
 }
 
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-  if (!tag.isTag) {
-    tag.tag = hyphenize(tag.tag)
-  }
+  tag.tag = hyphenize(tag.tag)
   var pre = "$" + tag.tag,
       output = ""
   fontType = "text-font"
@@ -407,6 +375,10 @@ function outputSetupVars(style, baseSize, fonts) {
   output += pre + "-font-family: $" + fontType + ";\n"
   if (useRem) {
     fontSize = Math.round((style.size / baseSize) * 1000) / 1000 + "rem"
+  }
+  var lineSpacing = style.spacing;
+  if (String(lineSpacing).toLowerCase() == "nan") {
+    lineSpacing = 0
   }
   output += pre + "-font-size: " + fontSize + ";\n";
   output += pre + "-letter-spacing: " + parseFloat(style.spacing) + "px;\n";
@@ -424,19 +396,35 @@ function outputSetupVars(style, baseSize, fonts) {
   return output
 }
 
-function outputMixin (tag, indent) {
+function outputMixin (tag, indent, isResponsive) {
   var text = "",
-      output = "",
-      pre = "$" + tag
+      output = ""
   var i;
   for (i = 0; i < indent; i++) { 
-      text += " ";
+    text += " ";
   }
-  output += text + "  font-family: " + pre + "-font-family;\n"
-  output += text + "  font-size: " + pre + "-font-size;\n"
-  output += text + "  letter-spacing: " + pre + "-letter-spacing;\n"
-  output += text + "  line-height: " + pre + "-line-height;\n"
-  output += text + "  text-decoration: " + pre + "-text-decoration;\n"
-  output += text + "  margin: " + pre + "-margin;\n"
+  indent = text;
+  if (!tag.isTag) {
+    var newTag = tag.tag
+    tag.tag = newTag;
+    tag.cssSelector = newTag
+  }
+  attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-decoration", "margin"]
+  _.forEach(attributes, function(attribute){
+    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n"
+    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n"
+    if (isResponsive) {
+      output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n"
+      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n"
+      output += indent + "  }\n"
+    }
+    output += indent + "}\n"
+  })
+  // now tie it all together
+  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n"
+  _.forEach(attributes, function(attribute){
+    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" +attribute + ";\n"
+  })
+  output += indent + "}\n"
   return output
 }

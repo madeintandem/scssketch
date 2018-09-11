@@ -27,10 +27,6 @@ export default function(context) {
       scaleFactor: parseFloat(mScaleFactor.stringValue())
     })
     
-    // Log the results to the console
-    // console.log("desktop type:", desktopType)
-    // console.log("mobile type:", mobileType)
-    
     if (desktopType) {
       updateTypeStyles(desktopType, "desktop")
     }
@@ -446,13 +442,11 @@ function updateTypeStyles(styleMap, desktopRamp) {
       size: calculatedStyle.fontSize,
       lineHeight: calculatedStyle.lineHeight
     }
-    // console.log(changes)
 
     sharedStyles.objects().forEach((documentStyle) => {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
         var style = getTextStyleAsJson(documentStyle, changes);
-        // console.log(style);
         setTypeStyle(style)
       }
     });

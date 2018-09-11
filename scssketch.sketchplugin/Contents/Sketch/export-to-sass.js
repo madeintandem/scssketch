@@ -17547,19 +17547,19 @@ module.exports = {
 
       if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0 && layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile, layerTextStyleMap.desktop);
-        textStyleSheet += writeTwoTypeStyles(layerTextStyleMap.mobile, layerTextStyleMap.desktop, fonts); // - mobile sizes only
+        textStyleSheet += writeTypeStyles(fonts, layerTextStyleMap.mobile, layerTextStyleMap.desktop); // - mobile sizes only
       } else if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile);
-        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.mobile, fonts); // - desktop sizes only
+        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.mobile); // - desktop sizes only
       } else if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.desktop);
-        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.desktop, fonts);
+        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.desktop);
       } // - assorted styles (separate, as is)
 
 
       if (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.assorted);
-        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.assorted, fonts);
+        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.assorted);
       }
     }
 
@@ -17723,7 +17723,6 @@ function mostUsed(foundFonts) {
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
   styles.forEach(function (style) {
-    // log(String(style.name()) + " => " + getTag(String(style.name())).tag)
     var found = false;
     uniqueStyles.forEach(function (sortedStyle) {
       if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
@@ -17734,8 +17733,7 @@ function getUniqueStyles(styles) {
     if (!found) {
       uniqueStyles.push(style);
     }
-  }); // log(uniqueStyles)
-
+  });
   return uniqueStyles;
 }
 
@@ -17824,65 +17822,31 @@ function getTag(name) {
 }
 
 function hyphenize(str) {
-  return String(str).replace(/\s\.\,]+/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\s]/g, '_').toLowerCase();
 }
 
-function writeOneTypeStyle(typeRamp, fonts) {
-  var output = String(""),
-      styles = typeRamp.styles,
-      baseFontSize = mobileBaseFontSize;
+function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
+  var output = "",
+      isResponsive = false,
+      mobileStyles = mobileTypeRamp.styles,
+      desktopStyles = [],
+      exceptionDesktopStyles = [];
 
-  if (useRem && typeRamp.hasParagraph) {
-    baseFontSize = typeRamp.styles[0].size;
+  if (desktopTypeRamp) {
+    desktopStyles = desktopTypeRamp.styles, exceptionDesktopStyles = desktopStyles.slice();
   }
 
-  styles.forEach(function (thisStyle) {
-    var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-
-    if (tag.isTag && tag.variant) {
-      styleName = styleName.slice(0, styleName.indexOf(tag.variant)) + styleName.slice(styleName.indexOf(tag.variant) + tag.variant.length);
-    }
-
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-
-    output += "// " + styleName + "\n"; // set vars
-
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts); // use vars
-
-    var labelTextStyle = "-text-style";
-
-    if (!tag.isTag && tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = "";
-    }
-
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0);
-    output += "}\n";
-  });
-  return output;
-}
-
-function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
-  var output = String(""),
-      mobileStyles = mobileTypeRamp.styles,
-      desktopStyles = desktopTypeRamp.styles;
-  exceptionDesktopStyles = desktopTypeRamp.styles.slice();
   mobileStyles.forEach(function (thisStyle) {
-    var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-
     var desktopTag;
     var desktopStyleName;
+    var styleName = String(thisStyle.name);
+    var tag = getTag(styleName);
+
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
+    }
 
     if (tag.isTag && tag.variant) {
-      log(styleName + " and tagVariant = " + tag.variant + " and indexOf = " + styleName.toLowerCase().indexOf(tag.variant));
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
     } // replace "m" with "h"
 
@@ -17898,7 +17862,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     var found = false;
     var thisDesktopStyle;
 
-    _.forEach(desktopTypeRamp.styles, function (desktopStyle) {
+    _.forEach(desktopStyles, function (desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
       desktopTag = getTag(desktopStyleName);
 
@@ -17936,49 +17900,44 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
 
     if (thisDesktopStyle) {
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts);
-    } // use vars
+      isResponsive = true;
+    } // give me those sweet sweet mixins
 
 
-    var labelTextStyle = "-text-style";
+    output += outputMixin(tag, 0, isResponsive);
+  });
 
-    if (tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = "";
+  _.forEach(exceptionDesktopStyles, function (thisStyle) {
+    var styleName = String(thisStyle.name);
+    var tag = getTag(styleName);
+
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
     }
 
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0); // if desktop, use media query and desktop vars
-
-    if (thisDesktopStyle) {
-      output += "  @media screen and (min-width: " + breakpointVariable + ") {\n";
-      output += "    & {\n";
-      output += outputMixin(desktopTag.tag, 4);
-      output += "    }\n";
-      output += "  }\n";
-    } // end mixin
+    if (tag.isTag && tag.variant) {
+      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
+    } // replace "m" with "h"
 
 
-    output += "}\n";
-  }); // write exception desktop styles 
+    if (tag.isTag && tag.selector == "p") {
+      styleName = styleName.slice(0, 1) + styleName.slice(2);
+    } else if (tag.isTag) {
+      styleName = styleName.slice(0, 1) + "H" + styleName.slice(2);
+    }
 
-  if (exceptionDesktopStyles.length > 0) {
-    output += "// ORPHANED DESKTOP STYLES";
-  }
+    output += "// " + styleName + "\n";
+    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts);
+    output += outputMixin(tag, 0, false);
+  });
 
-  exceptionDesktopStyles = {
-    "styles": exceptionDesktopStyles
-  };
-  output += writeOneTypeStyle(exceptionDesktopStyles, fonts);
   return output;
 }
 
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-
-  if (!tag.isTag) {
-    tag.tag = hyphenize(tag.tag);
-  }
-
+  tag.tag = hyphenize(tag.tag);
   var pre = "$" + tag.tag,
       output = "";
   fontType = "text-font";
@@ -17997,6 +17956,13 @@ function outputSetupVars(style, baseSize, fonts) {
 
   if (useRem) {
     fontSize = Math.round(style.size / baseSize * 1000) / 1000 + "rem";
+  }
+
+  log(style.spacing);
+  var lineSpacing = style.spacing;
+
+  if (String(lineSpacing).toLowerCase() == "nan") {
+    lineSpacing = 0;
   }
 
   output += pre + "-font-size: " + fontSize + ";\n";
@@ -18019,22 +17985,48 @@ function outputSetupVars(style, baseSize, fonts) {
   return output;
 }
 
-function outputMixin(tag, indent) {
+function outputMixin(tag, indent, isResponsive) {
   var text = "",
-      output = "",
-      pre = "$" + tag;
+      output = "";
   var i;
 
   for (i = 0; i < indent; i++) {
     text += " ";
   }
 
-  output += text + "  font-family: " + pre + "-font-family;\n";
-  output += text + "  font-size: " + pre + "-font-size;\n";
-  output += text + "  letter-spacing: " + pre + "-letter-spacing;\n";
-  output += text + "  line-height: " + pre + "-line-height;\n";
-  output += text + "  text-decoration: " + pre + "-text-decoration;\n";
-  output += text + "  margin: " + pre + "-margin;\n";
+  indent = text;
+
+  if (!tag.isTag) {
+    var newTag = tag.tag;
+    log("newTag == " + newTag);
+    tag.tag = newTag;
+    tag.cssSelector = newTag;
+  }
+
+  attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-decoration", "margin"];
+
+  _.forEach(attributes, function (attribute) {
+    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n";
+    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n";
+
+    if (isResponsive) {
+      output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n";
+      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n";
+      output += indent + "  }\n";
+    }
+
+    output += indent + "}\n";
+  }); // now tie it all together
+
+
+  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n";
+
+  _.forEach(attributes, function (attribute) {
+    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" + attribute + ";\n";
+  });
+
+  output += indent + "}\n";
+  log(output);
   return output;
 }
 
