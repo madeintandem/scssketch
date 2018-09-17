@@ -10,7 +10,7 @@ module.exports = {
       if (style.value().shadows().length || style.value().innerShadows().length) {
         addShadow(shadows, style)
       }
-      else if(tag.isTag && tag.ramp != "x") {
+      else if((tag.isTag && tag.ramp != "x") || !tag.isTag) {
         addColor(colors, style)
       }
     })
@@ -48,14 +48,18 @@ function addShadow(shadowsArray, style) {
 function getShadows(styles) {
   var result = ""
   _.forEach(styles.shadows(), function(style){
-    result += constructShadowValue(style)
+    if (style.isEnabled()) {
+      result += constructShadowValue(style)
+    }
   })
   _.forEach(styles.innerShadows(), function(style){
-    result += constructShadowValue(style)
+    if (style.isEnabled()) {
+      result += constructShadowValue(style, "inset")
+    }
   })
   return result.slice(0,-2)
 }
-function constructShadowValue(style) {
+function constructShadowValue(style, inset) {
   result = ""
   var offsetX = style.offsetX();
   var offsetY = style.offsetY();
@@ -67,7 +71,10 @@ function constructShadowValue(style) {
     rgba = rgba + removeZeros(value) + ", "
   })
   rgba = rgba.slice(0, -2) + ")"
-  result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `
+  result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `;
+  if (inset == "inset") {
+    result = inset + " " + result
+  }
   return result
 }
 function removeZeros(str){
@@ -108,16 +115,24 @@ function writeShadows(shadows) {
   return styles
 }
 function getTag (name) {
-  var tag = name.slice(0, name.indexOf("]") + 1);
-  var isTag = false
-  if (tag.slice(0,1) == "[" && tag.slice(tag.length -1) == "]") {
-    isTag = true;
-    tag = tag.substring(1, tag.length - 1)
-    if (tag.slice(-1).toLowerCase() == "l") {
-      tag = tag.slice(0, -1)
+  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\].*/g,
+      tag = name,
+      isTag = false,
+      match = regex.exec(name.toLowerCase()),
+      ramp,
+      selector,
+      variant,
+      cssSelector
+  if (match) {
+    isTag = true
+    tag = match[1].toLowerCase()
+    ramp = match[2].toLowerCase()
+    selector = match[3].toLowerCase()
+    cssSelector = match[3].toLowerCase()
+    if (cssSelector != "p") {
+      cssSelector = "h" + selector
     }
-  } else {
-    tag = name
+    variant = match[4]
   }
-  return {isTag: isTag, tag: tag}
+  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }

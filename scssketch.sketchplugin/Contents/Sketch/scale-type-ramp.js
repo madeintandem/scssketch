@@ -17301,9 +17301,7 @@ var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
       baseFontSize: parseInt(mFontSize.stringValue()),
       lineHeightFactor: parseFloat(mLineHeight.stringValue()),
       scaleFactor: parseFloat(mScaleFactor.stringValue())
-    }); // Log the results to the console
-    // console.log("desktop type:", desktopType)
-    // console.log("mobile type:", mobileType)
+    });
 
     if (desktopType) {
       updateTypeStyles(desktopType, "desktop");
@@ -17680,14 +17678,12 @@ function updateTypeStyles(styleMap, desktopRamp) {
     var token = "[" + ramp + calculatedStyle.selector;
     var changes = {
       size: calculatedStyle.fontSize,
-      lineHeight: calculatedStyle.lineHeight // console.log(changes)
-
+      lineHeight: calculatedStyle.lineHeight
     };
     sharedStyles.objects().forEach(function (documentStyle) {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
-        var style = getTextStyleAsJson(documentStyle, changes); // console.log(style);
-
+        var style = getTextStyleAsJson(documentStyle, changes);
         setTypeStyle(style);
       }
     });
