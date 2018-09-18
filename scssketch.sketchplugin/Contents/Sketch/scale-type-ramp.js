@@ -17273,7 +17273,8 @@ module.exports = function(module) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
+var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js"); // Here are some options that I'm hard-coding for now
+
 
 var numberOfTextStyles = 5; // This does not include paragraph styles
 
@@ -17284,8 +17285,7 @@ var doc;
 var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
   doc = context.api().selectedDocument;
-  sharedStyles = doc.sketchObject.documentData().layerTextStyles(); // Here are some options that I'm hard-coding for now
-
+  sharedStyles = doc.sketchObject.documentData().layerTextStyles();
   var window = createWindow();
   var alert = window[0];
   var response = alert.runModal();
@@ -17401,6 +17401,7 @@ function createWindow() {
 
   var desktopTypeRampLabel = alloc.initWithFrame(NSMakeRect(0, viewHeight - 70, viewWidth, 70));
   dFontSize = alloc.initWithFrame(NSMakeRect(10, viewHeight - 60, viewWidth / 3 - 20, 20));
+  dFontSize.becomeFirstResponder();
   var dFontSizeLabel = alloc.initWithFrame(NSMakeRect(10, viewHeight - 40, viewWidth / 3 - 20, 20));
   dLineHeight = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40) / 3, viewHeight - 60, viewWidth / 3 - 20, 20));
   var dLineHeightLabel = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40) / 3, viewHeight - 40, viewWidth / 3 - 20, 20));
@@ -17462,14 +17463,21 @@ function createWindow() {
   view.addSubview(mobileTypeRampLabel);
   view.addSubview(mFontSizeLabel);
   view.addSubview(mLineHeightLabel);
-  view.addSubview(mScaleFactorLabel); // Adding the textfields
+  view.addSubview(mScaleFactorLabel); // Set up tabbing
+
+  dFontSize.setNextKeyView(dLineHeight);
+  dLineHeight.setNextKeyView(dScaleFactor);
+  dScaleFactor.setNextKeyView(mFontSize);
+  mFontSize.setNextKeyView(mLineHeight);
+  mLineHeight.setNextKeyView(mScaleFactor); // Adding the textfields
 
   view.addSubview(dFontSize);
   view.addSubview(dLineHeight);
   view.addSubview(dScaleFactor);
   view.addSubview(mFontSize);
   view.addSubview(mLineHeight);
-  view.addSubview(mScaleFactor); // Show the dialog
+  view.addSubview(mScaleFactor);
+  alert.alert().window().setInitialFirstResponder(dFontSize); // Show the dialog
 
   return [alert];
 }
