@@ -17,13 +17,19 @@
       "name": "Scale Type Ramp...",
       "identifier": "scale-type-ramp-identifier",
       "script": "scale-type-ramp.js"
+    },
+    {
+      "name": "Align Text...",
+      "identifier": "align-text-identifier",
+      "script": "align-text.js"
     }
   ],
   "menu": {
     "title": "TAND&M Tools",
     "items": [
       "export-to-sass-identifier",
-      "scale-type-ramp-identifier"
+      "scale-type-ramp-identifier",
+      "align-text-identifier"
     ]
   },
   "disableCocoaScriptPreprocessor": true,
