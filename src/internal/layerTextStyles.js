@@ -89,7 +89,7 @@ module.exports = {
         _.forEach(fonts.auxiliaryFont, function(font){
           if (outputFontWeight) {
             theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
-          var fontFamilyValue = theDisplayFont.fontFamily;
+          var fontFamilyValue = theAuxiliaryFont.fontFamily;
           if (fontFamilyValue == theTextFont.fontFamily) {
             fontFamilyValue = "$text-font"
           } else if (fontFamilyValue == theDisplayFont.fontFamily) {
