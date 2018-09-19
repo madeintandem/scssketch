@@ -5,6 +5,34 @@ var defaultBaseFontSize = 16;
 var breakpointVariable = "$breakpoint";
 var mobileBaseFontSize = defaultBaseFontSize;
 var desktopBaseFontSize = defaultBaseFontSize;
+var outputFontWeight = true;
+
+var fontWeightWords = [
+    {"name": "thin", "value": 100},
+    {"name": "hairline", "value": 100},
+
+    {"name": "extralight", "value": 200},
+    {"name": "ultralight", "value": 200},
+
+    {"name": "light", "value": 300},
+
+    {"name": "normal", "value": 400},
+    {"name": "regular", "value": 400},
+    {"name": "", "value": 400},
+
+    {"name": "medium", "value": 500},
+
+    {"name": "semibold", "value": 600},
+    {"name": "demibold", "value": 600},
+
+    {"name": "bold", "value": 700},
+
+    {"name": "extrabold", "value": 800},
+    {"name": "ultrabold", "value": 800},
+
+    {"name": "black", "value": 900},
+    {"name": "heavy", "value": 900}
+  ]
 
 module.exports = {
   parse: function (sharedTextStyles) { 
@@ -29,37 +57,68 @@ module.exports = {
     return {"desktop": popPToTop(desktop), "mobile": popPToTop(mobile), "assorted": {"styles": assorted}};
   },
   writeSass: function (layerTextStyleMap, fonts) {
-    var textStyleSheet = ""
+    var textStyleSheet = "",
+      theTextFont,
+      theDisplayFont,
+      theAuxiliaryFont
     if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length) || (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length)) {
       textStyleSheet += "// FONT FAMILIES\n"
       if (fonts.textFont) {
-        textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
+        if (outputFontWeight) {
+          theTextFont = getFontAndWeight(fonts.textFont.font);
+          textStyleSheet += "$text-font: " + theTextFont.fontFamily + ";\n"
+          textStyleSheet += "$text-font-weight: " + theTextFont.fontWeight + ";\n"
+        } else {
+          textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
+        }
       }
       if (fonts.displayFont) {
-        textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
+        if (outputFontWeight) {
+          theDisplayFont = getFontAndWeight(fonts.displayFont.font);
+          var fontFamilyValue = theDisplayFont.fontFamily;
+          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+            fontFamilyValue = "$text-font"
+          }
+          textStyleSheet += "$display-font: " + fontFamilyValue + ";\n"
+          textStyleSheet += "$display-font-weight: " + theDisplayFont.fontWeight + ";\n"
+        } else {
+          textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
+        }
       }
       if (fonts.auxiliaryFont && fonts.auxiliaryFont.length > 0) {
         _.forEach(fonts.auxiliaryFont, function(font){
-          textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n"
+          if (outputFontWeight) {
+            theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
+          var fontFamilyValue = theAuxiliaryFont.fontFamily;
+          if (fontFamilyValue == theTextFont.fontFamily) {
+            fontFamilyValue = "$text-font"
+          } else if (fontFamilyValue == theDisplayFont.fontFamily) {
+            fontFamilyValue == "$display-font"
+          }
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n"
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-weight: " + theAuxiliaryFont.fontWeight + ";\n"
+          } else {
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n"
+          }
         })
       }
       // - mobile and desktop sizes [HAPPY PATH]
       if ((layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) && (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0)) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile, layerTextStyleMap.desktop)
-        textStyleSheet += writeTwoTypeStyles(layerTextStyleMap.mobile, layerTextStyleMap.desktop, fonts)
+        textStyleSheet += writeTypeStyles(fonts, layerTextStyleMap.mobile, layerTextStyleMap.desktop)
       // - mobile sizes only
       } else if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile)
-        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.mobile, fonts)
+        textStyleSheet += "\n// MOBILE TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.mobile)
       // - desktop sizes only
       } else if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.desktop)
-        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.desktop, fonts)
+        textStyleSheet += "\n// DESKTOP TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.desktop)
       }
       // - assorted styles (separate, as is)
       if (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length > 0) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.assorted)
-        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeOneTypeStyle(layerTextStyleMap.assorted, fonts)
+        textStyleSheet += "\n// ASSORTED TYPE STYLES\n" + writeTypeStyles(fonts, layerTextStyleMap.assorted)
       }
     }
     return textStyleSheet
@@ -74,7 +133,7 @@ module.exports = {
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute))
       var tag = getTag(String(style.name()))
       var attributes = style.style().textStyle().attributes();
-      var smallestSize = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)) * 1;
+      var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
       if (tag.isTag && tag.selector == "p") {
         isParagraph = true
       }
@@ -85,8 +144,8 @@ module.exports = {
           if (!foundFont.isParagraph) {
             foundFont.isParagraph = isParagraph
           }
-          if (smallestSize > foundFont.size) {
-            smallestSize = foundFont.size;
+          if (smallestSize < foundFont.smallestSize) {
+            foundFont.smallestSize = smallestSize;
           }
           var fontCount = foundFont.count
           found = true;
@@ -110,7 +169,7 @@ module.exports = {
     } else if (foundFonts.length == 2) {
       var smaller,
         smallestFont;
-      _.forEach(function(font){
+      _.forEach(foundFonts, function(font){
         if (!smallestFont) {
           smallestFont = font;
         } else if (font.smallestSize < smallestFont.smallestSize) {
@@ -130,7 +189,7 @@ module.exports = {
       if (index > -1) {
         subArray.splice(index, 1);
       }
-      textFont = smallestFont;
+      textFont = smaller;
       displayFont = subArray[0];
     } else {
       _.forEach(foundFonts, function(font){
@@ -155,21 +214,24 @@ module.exports = {
   }
 }
 function setBaseFontSize (mobileRamp, desktopRamp) {
-  if (useRem && mobileRamp.hasParagraph) {
-    mobileBaseFontSize = mobileRamp.styles[0].size
+  var output = "";
+  if (useRem) {
+    if (mobileRamp.hasParagraph) {
+      mobileBaseFontSize = mobileRamp.styles[0].size
+    }
+    if (desktopRamp && desktopRamp.hasParagraph) {
+      desktopBaseFontSize = desktopRamp.styles[0].size
+    }
+    var output = "\n// BASE FONT SIZE\n@mixin baseFontSize {\n"
+    // mobile base font size
+    output += "  font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
+    output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
+    output += "  & {\n"
+    output += "    font-size: " + Math.round(desktopBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
+    output += "    }\n"
+    output += "  }\n"
+    output += "}\n\n"
   }
-  if (desktopRamp && useRem && desktopRamp.hasParagraph) {
-    desktopBaseFontSize = desktopRamp.styles[0].size
-  }
-  var output = "\n// BASE FONT SIZE\n@mixin baseFontSize {\n"
-  // mobile base font size
-  output += "  font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
-  output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-  output += "  & {\n"
-  output += "    font-size: " + Math.round(desktopBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
-  output += "    }\n"
-  output += "  }\n"
-  output += "}\n"
   return output
 }
 function mostUsed(foundFonts) {
@@ -186,7 +248,6 @@ function mostUsed(foundFonts) {
 function getUniqueStyles(styles) {
   var uniqueStyles = [];
   styles.forEach(function(style){
-    // log(String(style.name()) + " => " + getTag(String(style.name())).tag)
     var found = false;
     uniqueStyles.forEach(function(sortedStyle){
       if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
@@ -197,7 +258,6 @@ function getUniqueStyles(styles) {
       uniqueStyles.push(style)
     }
   })
-  // log(uniqueStyles)
   return uniqueStyles;
 }
 function getTextStyleAsJson (style) {
@@ -207,12 +267,18 @@ function getTextStyleAsJson (style) {
       var lineHeight = par.maximumLineHeight();
       var paragraphSpacing = par.paragraphSpacing();
   }
+  var textTransform = 0
+  var text = attributes.MSAttributedStringTextTransformAttribute;
+  if (text != null) {
+      textTransform = String(attributes.MSAttributedStringTextTransformAttribute) * 1;
+  }
   var style = {
     name: String(style.name()),
     font: String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute)),
     size: String(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute)) * 1,
     spacing: String(attributes.NSKern) * 1,
     lineHeight: lineHeight,
+    textTransform: textTransform,
     paragraphSpacing: paragraphSpacing,
     underline: String(attributes.NSUnderline) * 1
   };
@@ -260,56 +326,55 @@ function getTag (name) {
   }
   return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }
-function hyphenize(str) {
-  return String(str).replace(/\s\.\,]+/g, '-').toLowerCase();
+function hyphenize (str) {
+  return String(str).replace(/[\.\,]/g, '_').replace(/[\s]/g, '-').toLowerCase();
 }
-function writeOneTypeStyle(typeRamp, fonts) {
-  var output = String(""),
-      styles = typeRamp.styles,
-      baseFontSize = mobileBaseFontSize;
-  if (useRem && typeRamp.hasParagraph) {
-    baseFontSize = typeRamp.styles[0].size
+function getFontAndWeight (fontName) {
+  fontName = String(fontName)
+  var hyphenIndex = fontName.indexOf("-"),
+      fontWeight = 400,
+      fontName;
+  if (hyphenIndex > 0) {
+    var fontWeightWord = fontName.slice(fontName.indexOf("-") + 1);
+    fontName = fontName.slice(0, fontName.indexOf("-"));
+    fontWeightWord = fontWeightWord.replace(/[\s]/g, '').toLowerCase();
+    fontWeightWords.forEach(function(thisFontWeight){
+      if (fontWeightWord == thisFontWeight.name) {
+        fontWeight = thisFontWeight.value
+      }
+    })
   }
-  styles.forEach(function(thisStyle) {
-    var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-    if (tag.isTag && tag.variant) {
-      styleName = styleName.slice(0, styleName.indexOf(tag.variant)) + styleName.slice(styleName.indexOf(tag.variant) + tag.variant.length);
-    }
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-    output += "// " + styleName + "\n";
-
-    // set vars
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
-    // use vars
-    var labelTextStyle = "-text-style";
-    if (!tag.isTag && tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = ""
-    }
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0)
-    output += "}\n"
-  })
-  return output
+  var returnFontName = String(fontName.replace(/([A-Z])/g, ' $1')).trim()
+  return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight}
 }
-function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
-  var output = String(""),
+
+function compareNameLength(a,b) {
+  if (a.name.length < b.name.length)
+    return -1;
+  if (a.name.length> b.name.length)
+    return 1;
+  return 0;
+}
+function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
+  var output = "",
+      isResponsive = false,
       mobileStyles = mobileTypeRamp.styles,
-      desktopStyles = desktopTypeRamp.styles;
-      exceptionDesktopStyles = desktopTypeRamp.styles.slice()
+      desktopStyles = [],
+      exceptionDesktopStyles = [];
+      if (desktopTypeRamp) {
+        desktopStyles = desktopTypeRamp.styles,
+        exceptionDesktopStyles = desktopStyles.slice()
+      }
 
   mobileStyles.forEach(function(thisStyle) {
+    var desktopTag;
+    var desktopStyleName;
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
     if (!tag.isTag) {
       tag.tag = hyphenize(tag.tag);
     }
-    var desktopTag;
-    var desktopStyleName;
     if (tag.isTag && tag.variant) {
-    log(styleName + " and tagVariant = " + tag.variant + " and indexOf = " + styleName.toLowerCase().indexOf(tag.variant))
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
     }
     // replace "m" with "h"
@@ -322,7 +387,7 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     // find a counterpart desktop style
     var found = false;
     var thisDesktopStyle
-    _.forEach(desktopTypeRamp.styles, function(desktopStyle) {
+    _.forEach(desktopStyles, function(desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
       desktopTag = getTag(desktopStyleName);
       if (desktopTag.isTag && desktopTag.variant) {
@@ -357,44 +422,44 @@ function writeTwoTypeStyles(mobileTypeRamp, desktopTypeRamp, fonts) {
     // if desktop, set desktop vars
     if (thisDesktopStyle) {
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts)
+      isResponsive = true
     }
-    // use vars
-    var labelTextStyle = "-text-style"
-    if (tag.tag.slice(-5).toLowerCase() == "style") {
-      labelTextStyle = ""
-    }
-    output += "@mixin " + tag.cssSelector + labelTextStyle + " {\n";
-    output += outputMixin(tag.tag, 0)
-
-    // if desktop, use media query and desktop vars
-    if (thisDesktopStyle) {
-      output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-      output += "    & {\n"
-      output += outputMixin(desktopTag.tag, 4)
-      output += "    }\n"
-      output += "  }\n"
-    }
-    // end mixin
-    output += "}\n"
+    // give me those sweet sweet mixins
+    output += outputMixin(tag, 0, isResponsive)
   })
-  // write exception desktop styles 
-  if (exceptionDesktopStyles.length > 0) {
-    output += "// ORPHANED DESKTOP STYLES"
-  }
-  exceptionDesktopStyles = {"styles": exceptionDesktopStyles};
-  output += writeOneTypeStyle(exceptionDesktopStyles, fonts)
-  return output
+  _.forEach(exceptionDesktopStyles, function(thisStyle) {
+    var styleName = String(thisStyle.name);
+    var tag = getTag(styleName);
+    if (!tag.isTag) {
+      tag.tag = hyphenize(tag.tag);
+    }
+    if (tag.isTag && tag.variant) {
+      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
+    }
+    // replace "m" with "h"
+    if (tag.isTag && tag.selector == "p") {
+      styleName = styleName.slice(0,1) + styleName.slice(2)
+    } else if (tag.isTag) {
+      styleName = styleName.slice(0,1) + "H" + styleName.slice(2)
+    }
+    output += "// " + styleName + "\n";
+
+    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+    output += outputMixin(tag, 0, false)
+  })
+  return output;
 }
 
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-  if (!tag.isTag) {
-    tag.tag = hyphenize(tag.tag)
-  }
+  tag.tag = hyphenize(tag.tag)
   var pre = "$" + tag.tag,
-      output = ""
-  fontType = "text-font"
+      output = "";
+
+  // SET UP FONT FAMILY STUFF
+
+  var fontType = "text-font"
   if (fonts.displayFont && fonts.displayFont.font == style.font) {
     fontType = "display-font"
   } else {
@@ -404,13 +469,34 @@ function outputSetupVars(style, baseSize, fonts) {
       }
     })
   }
-  output += pre + "-font-family: $" + fontType + ";\n"
+  output += pre + "-font-family: $" + fontType + ", $" + fontType + "-fallback-fonts;\n"
+  if (outputFontWeight) {
+    output += pre + "-font-weight: $" + fontType + "-weight;\n"
+  }
+  fontSize = style.size + "px"
   if (useRem) {
     fontSize = Math.round((style.size / baseSize) * 1000) / 1000 + "rem"
   }
+  var lineSpacing = style.spacing;
+  if (String(lineSpacing).toLowerCase() == "nan") {
+    lineSpacing = 0
+  }
   output += pre + "-font-size: " + fontSize + ";\n";
   output += pre + "-letter-spacing: " + parseFloat(style.spacing) + "px;\n";
-  output += pre + "-line-height: " + Math.round(style.lineHeight / style.size * 100) / 100 + ";\n"
+  var textTransform = style.textTransform;
+  if (String(textTransform) == "0") {
+    textTransform = "none"
+  } else if (String(textTransform) == "1") {
+    textTransform = "uppercase"
+  } else if (String(textTransform) == "2") {
+    textTransform = "lowercase"
+  }
+  output += pre + "-text-transform: " + textTransform + ";\n";
+  var lineHeight = Math.round(style.lineHeight / style.size * 100) / 100;
+  if (String(lineHeight) == "0") {
+    lineHeight = "normal";
+  }
+  output += pre + "-line-height: " + lineHeight + ";\n"
   var underline = "none"
   if (style.underline) {
     underline = "underline"
@@ -424,19 +510,39 @@ function outputSetupVars(style, baseSize, fonts) {
   return output
 }
 
-function outputMixin (tag, indent) {
+function outputMixin (tag, indent, isResponsive) {
   var text = "",
-      output = "",
-      pre = "$" + tag
+      output = ""
   var i;
   for (i = 0; i < indent; i++) { 
-      text += " ";
+    text += " ";
   }
-  output += text + "  font-family: " + pre + "-font-family;\n"
-  output += text + "  font-size: " + pre + "-font-size;\n"
-  output += text + "  letter-spacing: " + pre + "-letter-spacing;\n"
-  output += text + "  line-height: " + pre + "-line-height;\n"
-  output += text + "  text-decoration: " + pre + "-text-decoration;\n"
-  output += text + "  margin: " + pre + "-margin;\n"
+  indent = text;
+  if (!tag.isTag) {
+    var newTag = tag.tag
+    tag.tag = newTag;
+    tag.cssSelector = newTag
+  }
+  var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
+  if (outputFontWeight) {
+    attributes = ["font-family", "font-weight", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
+  }
+  _.forEach(attributes, function(attribute){
+    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n"
+    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n"
+    if (isResponsive) {
+      output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n"
+      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n"
+      output += indent + "  }\n"
+    }
+    output += indent + "}\n"
+  })
+  // now tie it all together
+
+  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n"
+  _.forEach(attributes, function(attribute){
+    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" +attribute + ";\n"
+  })
+  output += indent + "}\n\n"
   return output
 }

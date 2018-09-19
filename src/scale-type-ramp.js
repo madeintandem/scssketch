@@ -1,4 +1,5 @@
 var _ = require("lodash")
+  // Here are some options that I'm hard-coding for now
 const numberOfTextStyles = 5; // This does not include paragraph styles
 const numberOfStylesSmallerThanBaseSize = 1; // There is one style that is smaller than the base paragraph size
 var sharedStyles
@@ -9,7 +10,6 @@ export default function(context) {
   doc = context.api().selectedDocument
   sharedStyles = doc.sketchObject.documentData().layerTextStyles()
 
-  // Here are some options that I'm hard-coding for now
   var window = createWindow();
   var alert = window[0]; 
 
@@ -26,10 +26,6 @@ export default function(context) {
       lineHeightFactor: parseFloat(mLineHeight.stringValue()),
       scaleFactor: parseFloat(mScaleFactor.stringValue())
     })
-    
-    // Log the results to the console
-    // console.log("desktop type:", desktopType)
-    // console.log("mobile type:", mobileType)
     
     if (desktopType) {
       updateTypeStyles(desktopType, "desktop")
@@ -146,6 +142,7 @@ function createWindow () {
   var desktopTypeRampLabel = alloc.initWithFrame(NSMakeRect(0, viewHeight - 70, viewWidth, 70));
 
   dFontSize = alloc.initWithFrame(NSMakeRect(10, viewHeight - 60, (viewWidth/3) - 20, 20));
+  dFontSize.becomeFirstResponder();
   var dFontSizeLabel = alloc.initWithFrame(NSMakeRect(10, viewHeight - 40, (viewWidth/3) - 20, 20));
 
   dLineHeight = alloc.initWithFrame(NSMakeRect(20 + (viewWidth - 40)/3, viewHeight - 60, (viewWidth/3) - 20, 20));
@@ -153,6 +150,7 @@ function createWindow () {
 
   dScaleFactor = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 60, (viewWidth/3) - 20, 20));
   var dScaleFactorLabel = alloc.initWithFrame(NSMakeRect(30 + (2*(viewWidth - 40)/3), viewHeight - 40, (viewWidth/3) - 20, 20));
+
 
 
   var mobileTypeRampLabel = alloc.initWithFrame(NSMakeRect(0, viewHeight -150, viewWidth, 70));
@@ -214,6 +212,7 @@ function createWindow () {
   mScaleFactorLabel.setBezeled(false);
   mScaleFactorLabel.setDrawsBackground(false);
 
+
   // Adding the labels
   view.addSubview(desktopTypeRampLabel)
   view.addSubview(dFontSizeLabel)
@@ -223,6 +222,15 @@ function createWindow () {
   view.addSubview(mFontSizeLabel)
   view.addSubview(mLineHeightLabel)
   view.addSubview(mScaleFactorLabel)
+
+  // Set up tabbing
+  dFontSize.setNextKeyView(dLineHeight)
+  dLineHeight.setNextKeyView(dScaleFactor)
+  dScaleFactor.setNextKeyView(mFontSize)
+  mFontSize.setNextKeyView(mLineHeight)
+  mLineHeight.setNextKeyView(mScaleFactor)
+
+
   // Adding the textfields
   view.addSubview(dFontSize);
   view.addSubview(dLineHeight);
@@ -230,6 +238,8 @@ function createWindow () {
   view.addSubview(mFontSize);
   view.addSubview(mLineHeight);
   view.addSubview(mScaleFactor);
+
+  alert.alert().window().setInitialFirstResponder(dFontSize)
 
   // Show the dialog
   return [alert]
@@ -446,13 +456,11 @@ function updateTypeStyles(styleMap, desktopRamp) {
       size: calculatedStyle.fontSize,
       lineHeight: calculatedStyle.lineHeight
     }
-    // console.log(changes)
 
     sharedStyles.objects().forEach((documentStyle) => {
       // Get matching style
       if (String(documentStyle.name()).startsWith(String(token).toUpperCase())) {
         var style = getTextStyleAsJson(documentStyle, changes);
-        // console.log(style);
         setTypeStyle(style)
       }
     });
