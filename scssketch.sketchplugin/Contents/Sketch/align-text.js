@@ -17424,14 +17424,19 @@ function addShadow(shadowsArray, style) {
 
 function getShadows(styles) {
   var result = "";
+  var theShadows = styles.shadows();
+  var theShadows = theShadows.reverse();
 
-  _.forEach(styles.shadows(), function (style) {
+  _.forEach(theShadows, function (style) {
     if (style.isEnabled()) {
       result += constructShadowValue(style);
     }
   });
 
-  _.forEach(styles.innerShadows(), function (style) {
+  var theInnerShadows = styles.innerShadows();
+  theInnerShadows = theInnerShadows.reverse();
+
+  _.forEach(theInnerShadows, function (style) {
     if (style.isEnabled()) {
       result += constructShadowValue(style, "inset");
     }
@@ -17486,14 +17491,35 @@ function addGradient(gradientsArray, style) {
         // it's radial
         prefix = "radial-gradient(ellipse at center, ";
       } else if (gradientType == 2) {
-        // it's conical
-        prefix = "conic-gradient(from 90deg, ";
-      } //log(prefix)
+        // it's conic
+        var offset = 0;
+        var firstStop;
+        var offsetDegrees = 0;
+        var getStops = fill.gradient().stops();
 
+        _.forEach(getStops, function (stop, index) {
+          if (index == 0 && parseFloat(stop.position()) != 0) {
+            offset = parseFloat(stop.position());
+            offsetDegrees = offset * 360;
+            offset = Math.round(10000 * offset) / 100;
+            firstStop = stop;
+          }
+        });
 
-      var stops = getGradientStops(fill.gradient().stops());
-      log(prefix + stops);
+        offsetDegrees = Math.round((90 + offsetDegrees) * 100) / 100;
+        prefix = "conic-gradient(from " + offsetDegrees + "deg, ";
+      }
+
+      var stops = getGradientStops(fill.gradient().stops(), offset);
       gradients += prefix + stops + ", ";
+
+      if (offset > 0) {
+        gradients = gradients.slice(0, -3) + ", ";
+        gradients += getGradientStops([firstStop]);
+        gradients = gradients.slice(0, gradients.lastIndexOf(")"));
+        gradients = gradients.slice(0, gradients.lastIndexOf(")"));
+        gradients += ") 100%), ";
+      }
     }
   });
 
@@ -17504,18 +17530,23 @@ function addGradient(gradientsArray, style) {
   });
 }
 
-function getGradientStops(stops) {
+function getGradientStops(stops, offset) {
   var result = "";
 
   _.forEach(stops, function (stop) {
     var position = parseFloat(stop.position());
     var rgba = rgbaToCSS(stop.color());
-    log(position + " " + rgba);
-    result = result + rgba + " " + Math.round(10000 * position) / 100 + "%, ";
+
+    if (!offset || String(offset).toLowerCase == "nan") {
+      offset = 0;
+    }
+
+    position = 100 * position - offset;
+    position = Math.round(100 * position) / 100;
+    result = result + rgba + " " + position + "%, ";
   });
 
-  result = result.slice(0, -2) + ")"; //log(result)
-
+  result = result.slice(0, -2) + ")";
   return result;
 }
 
