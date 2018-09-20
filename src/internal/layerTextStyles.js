@@ -327,7 +327,7 @@ function getTag (name) {
   return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }
 function hyphenize (str) {
-  return String(str).replace(/[\.\,]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
 }
 function getFontAndWeight (fontName) {
   fontName = String(fontName)

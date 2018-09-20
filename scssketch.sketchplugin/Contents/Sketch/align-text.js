@@ -17370,7 +17370,7 @@ module.exports = {
         var isGradient = false;
 
         _.forEach(style.value().fills(), function (fill) {
-          if (fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length) {
+          if (String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length) {
             isGradient = true;
           }
         });
@@ -17463,13 +17463,21 @@ function constructShadowValue(style, inset) {
 function addGradient(gradientsArray, style) {
   // for each gradient
   var gradients = "";
+  var isLinear = false;
   var theFills = style.value().fills();
   theFills = theFills.reverse();
 
   _.forEach(theFills, function (fill) {
-    if (fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length) {
+    if (fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity())) {
       // get gradient type
+      var stopsArray = fill.gradient().stops();
       var prefix = "";
+      var gradientOpacity = 1;
+
+      if (fill.contextSettings()) {
+        gradientOpacity = parseFloat(fill.contextSettings().opacity());
+      }
+
       var gradientType = fill.gradient().gradientType();
 
       if (gradientType == 0) {
@@ -17484,9 +17492,16 @@ function addGradient(gradientsArray, style) {
 
         var deg = rad * (180 / Math.PI); //subtract 90 because of sketch
 
-        var angle = deg - 90;
+        var angle = deg + 90;
         angle = Math.round(angle * 10) / 10;
-        prefix = "linear-gradient(" + angle + "deg, ";
+
+        if (angle == 0) {
+          prefix = "linear-gradient(";
+        } else {
+          stopsArray.reverse();
+          isLinear = true;
+          prefix = "linear-gradient(" + angle + "deg, ";
+        }
       } else if (gradientType == 1) {
         // it's radial
         prefix = "radial-gradient(ellipse at center, ";
@@ -17495,9 +17510,8 @@ function addGradient(gradientsArray, style) {
         var offset = 0;
         var firstStop;
         var offsetDegrees = 0;
-        var getStops = fill.gradient().stops();
 
-        _.forEach(getStops, function (stop, index) {
+        _.forEach(stopsArray, function (stop, index) {
           if (index == 0 && parseFloat(stop.position()) != 0) {
             offset = parseFloat(stop.position());
             offsetDegrees = offset * 360;
@@ -17510,7 +17524,7 @@ function addGradient(gradientsArray, style) {
         prefix = "conic-gradient(from " + offsetDegrees + "deg, ";
       }
 
-      var stops = getGradientStops(fill.gradient().stops(), offset);
+      var stops = getGradientStops(stopsArray, offset, gradientOpacity, isLinear);
       gradients += prefix + stops + ", ";
 
       if (offset > 0) {
@@ -17524,18 +17538,24 @@ function addGradient(gradientsArray, style) {
   });
 
   gradients = gradients.slice(0, -2);
+  var thisName = String(style.name());
+
+  if (getTag(thisName).isTag || thisName.indexOf("]") > 0) {
+    thisName = thisName.slice(thisName.indexOf("]") + 1).trim();
+  }
+
   gradientsArray.push({
-    "name": String(style.name()),
+    "name": hyphenize(thisName),
     "gradient": gradients
   });
 }
 
-function getGradientStops(stops, offset) {
+function getGradientStops(stops, offset, gradientOpacity, isLinear) {
   var result = "";
 
   _.forEach(stops, function (stop) {
     var position = parseFloat(stop.position());
-    var rgba = rgbaToCSS(stop.color());
+    var rgba = rgbaToCSS(stop.color(), gradientOpacity);
 
     if (!offset || String(offset).toLowerCase == "nan") {
       offset = 0;
@@ -17543,6 +17563,11 @@ function getGradientStops(stops, offset) {
 
     position = 100 * position - offset;
     position = Math.round(100 * position) / 100;
+
+    if (isLinear) {
+      position = 100 - position;
+    }
+
     result = result + rgba + " " + position + "%, ";
   });
 
@@ -17551,6 +17576,7 @@ function getGradientStops(stops, offset) {
 }
 
 function removeZeros(str) {
+  str = String(str);
   var regEx1 = /[0]+$/;
   var regEx2 = /[.]$/;
 
@@ -17563,7 +17589,11 @@ function removeZeros(str) {
   return str;
 }
 
-function rgbaToCSS(color) {
+function rgbaToCSS(color, opacityMultiplier) {
+  if (!opacityMultiplier) {
+    opacityMultiplier = 1;
+  }
+
   var rgba = color.toString().replace(/[a-z]|:/g, "");
   var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
   rgba = "rgba(";
@@ -17571,7 +17601,7 @@ function rgbaToCSS(color) {
     if (index < 3) {
       rgba = rgba + Math.round(255 * value) + ", ";
     } else {
-      rgba = rgba + removeZeros(value) + ", ";
+      rgba = rgba + removeZeros(parseInt(value) * opacityMultiplier) + ", ";
     }
   });
   rgba = rgba.slice(0, -2) + ")";
@@ -17579,7 +17609,7 @@ function rgbaToCSS(color) {
 }
 
 function hyphenize(str) {
-  return str.replace(/\s+/g, '-').replace(/\.+/g, '-').replace(/\,+/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
 }
 
 function writeColors(colors) {
@@ -18108,7 +18138,7 @@ function getTag(name) {
 }
 
 function hyphenize(str) {
-  return String(str).replace(/[\.\,]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
 }
 
 function getFontAndWeight(fontName) {
