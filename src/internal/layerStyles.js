@@ -38,7 +38,7 @@ module.exports = {
 function addColor(colorsArray, style) {
   var thisName = String(style.name())
   if (getTag(thisName).isTag) {
-    thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
+    thisName = getTag(thisName).name.trim()
   }
   var tmp = {
     name: hyphenize(thisName) + "-color",
@@ -49,7 +49,7 @@ function addColor(colorsArray, style) {
 function addShadow(shadowsArray, style) {
   var thisName = String(style.name())
   if (getTag(thisName).isTag) {
-    thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
+    thisName = getTag(thisName).name.trim()
   }
   tmp = {
     name: hyphenize(thisName),
@@ -160,7 +160,7 @@ function addGradient (gradientsArray, style) {
   gradients = gradients.slice(0, -2);
   var thisName = String(style.name())
   if (getTag(thisName).isTag || thisName.indexOf("]") > 0) {
-    thisName = thisName.slice(thisName.indexOf("]")+ 1).trim()
+    thisName = getTag(thisName).name.trim()
   }
   gradientsArray.push({"name": hyphenize(thisName), "gradient": gradients})
 }
@@ -251,14 +251,15 @@ function writeGradients(gradients) {
 
 }
 function getTag (name) {
-  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\].*/g,
+  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
       tag = name,
       isTag = false,
-      match = regex.exec(name.toLowerCase()),
+      match = regex.exec(name),
       ramp,
       selector,
       variant,
-      cssSelector
+      cssSelector,
+      tagName
   if (match) {
     isTag = true
     tag = match[1].toLowerCase()
@@ -269,6 +270,7 @@ function getTag (name) {
       cssSelector = "h" + selector
     }
     variant = match[4]
+    tagName = match[5]
   }
-  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
+  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant, "name": tagName}
 }

@@ -33,5 +33,5 @@
     ]
   },
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
+  "appcast": "https://raw.githubusercontent.com/devmynd/scssketch/master/.appcast.xml"
 }

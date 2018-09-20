@@ -17366,7 +17366,7 @@ function addColor(colorsArray, style) {
   var thisName = String(style.name());
 
   if (getTag(thisName).isTag) {
-    thisName = thisName.slice(thisName.indexOf("]") + 1).trim();
+    thisName = getTag(thisName).name.trim();
   }
 
   var tmp = {
@@ -17380,7 +17380,7 @@ function addShadow(shadowsArray, style) {
   var thisName = String(style.name());
 
   if (getTag(thisName).isTag) {
-    thisName = thisName.slice(thisName.indexOf("]") + 1).trim();
+    thisName = getTag(thisName).name.trim();
   }
 
   tmp = {
@@ -17513,7 +17513,7 @@ function addGradient(gradientsArray, style) {
   var thisName = String(style.name());
 
   if (getTag(thisName).isTag || thisName.indexOf("]") > 0) {
-    thisName = thisName.slice(thisName.indexOf("]") + 1).trim();
+    thisName = getTag(thisName).name.trim();
   }
 
   gradientsArray.push({
@@ -17636,14 +17636,15 @@ function writeGradients(gradients) {
 }
 
 function getTag(name) {
-  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\].*/g,
+  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
       tag = name,
       isTag = false,
-      match = regex.exec(name.toLowerCase()),
+      match = regex.exec(name),
       ramp,
       selector,
       variant,
-      cssSelector;
+      cssSelector,
+      tagName;
 
   if (match) {
     isTag = true;
@@ -17657,6 +17658,7 @@ function getTag(name) {
     }
 
     variant = match[4];
+    tagName = match[5];
   }
 
   return {
@@ -17665,7 +17667,8 @@ function getTag(name) {
     "ramp": ramp,
     "selector": selector,
     "cssSelector": cssSelector,
-    "variant": variant
+    "variant": variant,
+    "name": tagName
   };
 }
 
@@ -18079,14 +18082,15 @@ function array_move(arr, old_index, new_index) {
 ;
 
 function getTag(name) {
-  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\].*/g,
+  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
       tag = name,
       isTag = false,
-      match = regex.exec(name.toLowerCase()),
+      match = regex.exec(name),
       ramp,
       selector,
       variant,
-      cssSelector;
+      cssSelector,
+      tagName;
 
   if (match) {
     isTag = true;
@@ -18100,6 +18104,7 @@ function getTag(name) {
     }
 
     variant = match[4];
+    tagName = match[5];
   }
 
   return {
@@ -18108,7 +18113,8 @@ function getTag(name) {
     "ramp": ramp,
     "selector": selector,
     "cssSelector": cssSelector,
-    "variant": variant
+    "variant": variant,
+    "name": tagName
   };
 }
 
