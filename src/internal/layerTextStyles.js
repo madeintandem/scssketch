@@ -68,6 +68,7 @@ module.exports = {
           theTextFont = getFontAndWeight(fonts.textFont.font);
           textStyleSheet += "$text-font: " + theTextFont.fontFamily + ";\n"
           textStyleSheet += "$text-font-weight: " + theTextFont.fontWeight + ";\n"
+          textStyleSheet += "$text-font-style: " + theTextFont.fontStyle + ";\n"
         } else {
           textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
         }
@@ -81,6 +82,7 @@ module.exports = {
           }
           textStyleSheet += "$display-font: " + fontFamilyValue + ";\n"
           textStyleSheet += "$display-font-weight: " + theDisplayFont.fontWeight + ";\n"
+          textStyleSheet += "$display-font-style: " + theDisplayFont.fontStyle + ";\n"
         } else {
           textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
         }
@@ -89,14 +91,15 @@ module.exports = {
         _.forEach(fonts.auxiliaryFont, function(font){
           if (outputFontWeight) {
             theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
-          var fontFamilyValue = theAuxiliaryFont.fontFamily;
-          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
-            fontFamilyValue = "$text-font"
-          } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
-            fontFamilyValue == "$display-font"
-          }
+            var fontFamilyValue = theAuxiliaryFont.fontFamily;
+            if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+              fontFamilyValue = "$text-font"
+            } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
+              fontFamilyValue == "$display-font"
+            }
             textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n"
             textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-weight: " + theAuxiliaryFont.fontWeight + ";\n"
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-style: " + theAuxiliaryFont.fontStyle + ";\n"
           } else {
             textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n"
           }
@@ -335,11 +338,22 @@ function getFontAndWeight (fontName) {
   fontName = String(fontName)
   var hyphenIndex = fontName.indexOf("-"),
       fontWeight = 400,
+      fontStyle = "normal",
       fontName;
   if (hyphenIndex > 0) {
     var fontWeightWord = fontName.slice(fontName.indexOf("-") + 1);
     fontName = fontName.slice(0, fontName.indexOf("-"));
     fontWeightWord = fontWeightWord.replace(/[\s]/g, '').toLowerCase();
+
+    // find indexOf("italic")
+    if (fontWeightWord.indexOf("italic") >= 0) {
+      fontStyle = "italic"
+      fontWeightWord = fontWeightWord.replace("italic", "")
+    } else if (fontWeightWord.indexOf("oblique") >= 0) {
+      fontStyle = "oblique"
+      fontWeightWord = fontWeightWord.replace("oblique", "")
+    }
+
     fontWeightWords.forEach(function(thisFontWeight){
       if (fontWeightWord == thisFontWeight.name) {
         fontWeight = thisFontWeight.value
@@ -347,7 +361,7 @@ function getFontAndWeight (fontName) {
     })
   }
   var returnFontName = String(fontName.replace(/([A-Z])/g, ' $1')).trim()
-  return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight}
+  return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight, "fontStyle": fontStyle}
 }
 
 function compareNameLength(a,b) {
@@ -527,7 +541,7 @@ function outputMixin (tag, indent, isResponsive) {
   }
   var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   if (outputFontWeight) {
-    attributes = ["font-family", "font-weight", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
+    attributes = ["font-family", "font-weight", "font-style", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   }
   _.forEach(attributes, function(attribute){
     output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n"
