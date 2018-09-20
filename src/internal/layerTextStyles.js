@@ -137,7 +137,7 @@ module.exports = {
       var tag = getTag(String(style.name()))
       var attributes = style.style().textStyle().attributes();
       var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
-      if (tag.isTag && tag.selector == "p") {
+      if (tag.isTag && tag.cssSelector == "p") {
         isParagraph = true
       }
       var fontCount = 0
@@ -308,7 +308,7 @@ function array_move(arr, old_index, new_index) {
   return arr; 
 };
 function getTag (name) {
-  var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
+  var regex = /^\[(([A-Za-z])*(\d\.*[0-9]*|[\P|\p]+))(.*)\]\s(.*)/g,
       tag = name,
       isTag = false,
       match = regex.exec(name),
