@@ -17468,9 +17468,12 @@ function addGradient(gradientsArray, style) {
   theFills = theFills.reverse();
 
   _.forEach(theFills, function (fill) {
-    if (fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity())) {
+    if (String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity()) > 0) {
       // get gradient type
       var stopsArray = fill.gradient().stops();
+      stopsArray = _.sortBy(stopsArray, [function (style) {
+        return style.position();
+      }], ["desc"]);
       var prefix = "";
       var gradientOpacity = 1;
 
@@ -17478,6 +17481,7 @@ function addGradient(gradientsArray, style) {
         gradientOpacity = parseFloat(fill.contextSettings().opacity());
       }
 
+      log("gotten fill opacity = " + gradientOpacity);
       var gradientType = fill.gradient().gradientType();
 
       if (gradientType == 0) {
@@ -17594,6 +17598,7 @@ function rgbaToCSS(color, opacityMultiplier) {
     opacityMultiplier = 1;
   }
 
+  log("opacity multiplier = " + opacityMultiplier);
   var rgba = color.toString().replace(/[a-z]|:/g, "");
   var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
   rgba = "rgba(";
@@ -17601,15 +17606,17 @@ function rgbaToCSS(color, opacityMultiplier) {
     if (index < 3) {
       rgba = rgba + Math.round(255 * value) + ", ";
     } else {
-      rgba = rgba + removeZeros(parseInt(value) * opacityMultiplier) + ", ";
+      log("value = " + value);
+      rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
     }
   });
   rgba = rgba.slice(0, -2) + ")";
+  log("rgba = " + rgba);
   return rgba;
 }
 
 function hyphenize(str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
 }
 
 function writeColors(colors) {
@@ -17833,9 +17840,9 @@ module.exports = {
             theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
             var fontFamilyValue = theAuxiliaryFont.fontFamily;
 
-            if (fontFamilyValue == theTextFont.fontFamily) {
+            if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
               fontFamilyValue = "$text-font";
-            } else if (fontFamilyValue == theDisplayFont.fontFamily) {
+            } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
               fontFamilyValue == "$display-font";
             }
 
@@ -18138,7 +18145,7 @@ function getTag(name) {
 }
 
 function hyphenize(str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
 }
 
 function getFontAndWeight(fontName) {

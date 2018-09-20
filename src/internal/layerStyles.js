@@ -94,14 +94,16 @@ function addGradient (gradientsArray, style) {
   var theFills = style.value().fills();
   theFills = theFills.reverse()
   _.forEach(theFills, function(fill){
-    if (fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity())) {
+    if (String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity()) > 0) {
       // get gradient type
       var stopsArray = fill.gradient().stops()
+      stopsArray = _.sortBy(stopsArray, [style => style.position()], ["desc"])
       var prefix = "";
       var gradientOpacity = 1;
       if (fill.contextSettings()) {
         gradientOpacity = parseFloat(fill.contextSettings().opacity());
       }
+      log("gotten fill opacity = " + gradientOpacity)
       var gradientType = fill.gradient().gradientType();
       if (gradientType == 0) {
         // it's linear
@@ -166,7 +168,6 @@ function getGradientStops(stops, offset, gradientOpacity, isLinear) {
   var result = "";
   _.forEach(stops, function(stop){
     var position = parseFloat(stop.position());
-
     var rgba = rgbaToCSS(stop.color(), gradientOpacity)
     if (!offset || String(offset).toLowerCase == "nan") {
       offset = 0
@@ -195,6 +196,7 @@ function rgbaToCSS(color, opacityMultiplier) {
   if (!opacityMultiplier) {
     opacityMultiplier = 1;
   }
+  log("opacity multiplier = " + opacityMultiplier)
   var rgba = color.toString().replace(/[a-z]|:/g, "")
   var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
   rgba = "rgba("
@@ -202,14 +204,16 @@ function rgbaToCSS(color, opacityMultiplier) {
     if (index < 3) {
       rgba = rgba + Math.round(255 * value) + ", "
     } else {
-      rgba = rgba + removeZeros(parseInt(value) * opacityMultiplier) + ", "
+      log("value = " + value)
+      rgba = rgba + removeZeros(value * opacityMultiplier) + ", "
     }
   })
   rgba = rgba.slice(0, -2) + ")"
+  log("rgba = " + rgba)
   return rgba
 }
 function hyphenize (str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
 }
 function writeColors(colors) {
   var styles = ""

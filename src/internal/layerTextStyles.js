@@ -90,9 +90,9 @@ module.exports = {
           if (outputFontWeight) {
             theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
           var fontFamilyValue = theAuxiliaryFont.fontFamily;
-          if (fontFamilyValue == theTextFont.fontFamily) {
+          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
             fontFamilyValue = "$text-font"
-          } else if (fontFamilyValue == theDisplayFont.fontFamily) {
+          } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
             fontFamilyValue == "$display-font"
           }
             textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n"
@@ -327,7 +327,7 @@ function getTag (name) {
   return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant}
 }
 function hyphenize (str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').toLowerCase();
+  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
 }
 function getFontAndWeight (fontName) {
   fontName = String(fontName)
