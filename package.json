@@ -2,7 +2,7 @@
   "name": "scssketch",
   "description": "Custom tools for living the ultimate the TAND&M life. Built with love and care by Sarah Aslanifar, Drew Vosburg, and Max Oppenheimer",
   "author": "TAND&M",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "engines": {
     "sketch": ">=3.0"
   },
