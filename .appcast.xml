@@ -2,9 +2,6 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
   <channel>
     <item>
-      <enclosure url="https://github.com/devmynd/scssketch/releases/download/v1.0.0/scssketch.sketchplugin.zip" sparkle:version="1.0.0"/>
-    </item>
-    <item>
       <title>Export the SCSS!</title>
       <link>https://github.com/devmynd/scssketch</link>
       <description>Collection of tools that exports SCSS, modifies type styles into modular type ramps, and aligns specific type symbols</description>
