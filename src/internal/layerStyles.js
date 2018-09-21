@@ -103,7 +103,6 @@ function addGradient (gradientsArray, style) {
       if (fill.contextSettings()) {
         gradientOpacity = parseFloat(fill.contextSettings().opacity());
       }
-      log("gotten fill opacity = " + gradientOpacity)
       var gradientType = fill.gradient().gradientType();
       if (gradientType == 0) {
         // it's linear
@@ -196,7 +195,6 @@ function rgbaToCSS(color, opacityMultiplier) {
   if (!opacityMultiplier) {
     opacityMultiplier = 1;
   }
-  log("opacity multiplier = " + opacityMultiplier)
   var rgba = color.toString().replace(/[a-z]|:/g, "")
   var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
   rgba = "rgba("
@@ -204,12 +202,10 @@ function rgbaToCSS(color, opacityMultiplier) {
     if (index < 3) {
       rgba = rgba + Math.round(255 * value) + ", "
     } else {
-      log("value = " + value)
       rgba = rgba + removeZeros(value * opacityMultiplier) + ", "
     }
   })
   rgba = rgba.slice(0, -2) + ")"
-  log("rgba = " + rgba)
   return rgba
 }
 function hyphenize (str) {

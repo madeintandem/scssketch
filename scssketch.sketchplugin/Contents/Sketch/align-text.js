@@ -17481,7 +17481,6 @@ function addGradient(gradientsArray, style) {
         gradientOpacity = parseFloat(fill.contextSettings().opacity());
       }
 
-      log("gotten fill opacity = " + gradientOpacity);
       var gradientType = fill.gradient().gradientType();
 
       if (gradientType == 0) {
@@ -17598,7 +17597,6 @@ function rgbaToCSS(color, opacityMultiplier) {
     opacityMultiplier = 1;
   }
 
-  log("opacity multiplier = " + opacityMultiplier);
   var rgba = color.toString().replace(/[a-z]|:/g, "");
   var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
   rgba = "rgba(";
@@ -17606,12 +17604,10 @@ function rgbaToCSS(color, opacityMultiplier) {
     if (index < 3) {
       rgba = rgba + Math.round(255 * value) + ", ";
     } else {
-      log("value = " + value);
       rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
     }
   });
   rgba = rgba.slice(0, -2) + ")";
-  log("rgba = " + rgba);
   return rgba;
 }
 
@@ -18224,10 +18220,8 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     } // replace "m" with "h"
 
 
-    if (tag.isTag && tag.selector == "p") {
-      styleName = styleName.slice(0, 1) + styleName.slice(2);
-    } else if (tag.isTag) {
-      styleName = styleName.slice(0, 1) + "H" + styleName.slice(2);
+    if (tag.isTag) {
+      styleName = tag.cssSelector.toUpperCase() + " " + tag.name;
     }
 
     output += "// " + styleName + "\n"; // find a counterpart desktop style

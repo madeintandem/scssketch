@@ -394,10 +394,8 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
     }
     // replace "m" with "h"
-    if (tag.isTag && tag.selector == "p") {
-      styleName = styleName.slice(0,1) + styleName.slice(2)
-    } else if (tag.isTag) {
-      styleName = styleName.slice(0,1) + "H" + styleName.slice(2)
+    if (tag.isTag) {
+      styleName = tag.cssSelector.toUpperCase() + " " + tag.name
     }
     output += "// " + styleName + "\n";
     // find a counterpart desktop style
