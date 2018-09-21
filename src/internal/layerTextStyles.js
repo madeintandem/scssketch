@@ -493,12 +493,13 @@ function outputSetupVars(style, baseSize, fonts) {
   if (useRem) {
     fontSize = Math.round((style.size / baseSize) * 1000) / 1000 + "rem"
   }
-  var lineSpacing = style.spacing;
-  if (String(lineSpacing).toLowerCase() == "nan") {
-    lineSpacing = 0
-  }
   output += pre + "-font-size: " + fontSize + ";\n";
-  output += pre + "-letter-spacing: " + parseFloat(style.spacing) + "px;\n";
+  var letterSpacing = parseFloat(style.spacing) + "px;\n";
+  if (useRem) {
+    letterSpacing = Math.round((parseFloat(style.spacing) / baseSize) * 100) / 100 + "rem;\n";
+    }
+  output += pre + "-letter-spacing: " + letterSpacing;
+
   var textTransform = style.textTransform;
   if (String(textTransform) == "0") {
     textTransform = "none"
@@ -521,6 +522,9 @@ function outputSetupVars(style, baseSize, fonts) {
   var marginValue = "0";
   if (style.paragraphSpacing > 0) {
     marginValue = "0 0 " + style.paragraphSpacing + "px 0";
+    if (useRem) {
+      marginValue = "0 0 " + Math.round((style.paragraphSpacing / baseSize) * 100) / 100 + "rem 0";
+    }
   }
   output += pre + "-margin: " + marginValue + ";\n"
   return output
