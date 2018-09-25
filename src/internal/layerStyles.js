@@ -81,7 +81,7 @@ function constructShadowValue(style, inset) {
   var offsetY = style.offsetY();
   var blurRadius = style.blurRadius();
   var rgba = rgbaToCSS(style.color())
-  result += `${offsetX}px ${offsetY}px ${blurRadius}px rgba${rgba}, `;
+  result += `${offsetX}px ${offsetY}px ${blurRadius}px ${rgba}, `;
   if (inset == "inset") {
     result = inset + " " + result
   }

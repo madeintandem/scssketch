@@ -6,7 +6,7 @@ var doc = document.sketchObject;
 var pages = doc.pages()
 var symbolsPage;
 pages.forEach(function(page){
-  if (page.name() == "Symbols") {
+  if (page.name() === "Symbols") {
     symbolsPage = page;
   }
 })
@@ -14,10 +14,7 @@ function findSymbolById (theid) {
   theid = String(theid)
   var result;
   symbolsPage.layers().forEach(function(layer){
-    // symbolID
-    if (layer.symbolID) {
-    }
-    if (layer.symbolID && String(layer.symbolID()) == theid) {
+    if (layer.symbolID && String(layer.symbolID()) === theid) {
       result = layer
     }
   })
@@ -55,32 +52,32 @@ function getShapeOverrides (shapeSymbol) {
     var value = "--nothing--";
     var valueSymbol;
     symbolMaster.layers().forEach(function(newLayer){
-      if (override.overrideName[0] == String(newLayer.objectID())) {
+      if (override.overrideName[0] === String(newLayer.objectID())) {
         // we have a match
         firstSymbolName = String(newLayer.name())
         valueSymbol = findSymbolById(override.value)
         if (valueSymbol) {
           value = String(valueSymbol.name())
         }
-        if (override.overrideName.length == 2) {
+        if (override.overrideName.length === 2) {
           var firstSymbol = findSymbolById(String(newLayer.symbolID()));
           firstSymbol.layers().forEach(function(eachLayer){
-            if(override.overrideName[1] == String(eachLayer.objectID())) {
-              secondSymbolName == String(eachLayer.name())
+            if(override.overrideName[1] === String(eachLayer.objectID())) {
+              secondSymbolName === String(eachLayer.name())
             }
           })
         }
       }
     })
-    if (firstSymbolName.toLowerCase() == "fill") {
+    if (firstSymbolName.toLowerCase() === "fill") {
       // is it empty?
-      if (value == "--nothing--") {
+      if (value === "--nothing--") {
         overrideResults.background = "transparent"
       } else if (value.toLowerCase().startsWith('color')) {
         overrideResults.background = "#" + valueSymbol.layers()[0].style().firstEnabledFill().color().immutableModelObject().hexValue();
       }
     } else if (firstSymbolName.toLowerCase().startsWith("border")) {
-      if (value == "--nothing--") {
+      if (value === "--nothing--") {
         overrideResults.borderColor = "transparent"
       } else if (value.toLowerCase().startsWith('color')) {
         overrideResults.borderColor = "#" + valueSymbol.layers()[0].style().firstEnabledFill().color().immutableModelObject().hexValue();
@@ -107,7 +104,7 @@ function getBorderThickness (border) {
       var outer = {"top": 0,"bottom":0,"left":0,"right":0};
       var inner = {"top": 0,"bottom":0,"left":0,"right":0};
       shapeGroup.layers().forEach(function(shape, index){
-        if (index == 0) {
+        if (index === 0) {
           outer.top = parseFloat(shape.frame().y())
           outer.left = parseFloat(shape.frame().x())
           outer.bottom = parseFloat(shape.frame().height()) + outer.top
@@ -152,7 +149,7 @@ function parseShape (layer) {
     if (fillOrBorderName.indexOf(" ") >= 0) {
       fillOrBorderName = fillOrBorderName.slice(0, fillOrBorderName.indexOf(" "))
     }
-    if (fillOrBorderName == "fill") {
+    if (fillOrBorderName === "fill") {
       // we now have fill symbol, let's look it up
       var fill = findSymbolById(fillOrBorder.symbolID());
 
@@ -176,7 +173,7 @@ function parseShape (layer) {
           
         }
       })
-    } else if (fillOrBorderName == "border") {
+    } else if (fillOrBorderName === "border") {
       var border = findSymbolById(fillOrBorder.symbolID());
       borderThickness = getBorderThickness(border)
     }
@@ -209,7 +206,7 @@ if (symbolsPage) {
         "textAlignment": null
       }
       symbol.layers().forEach(function(layer){
-        if (String(layer.name()).toLowerCase() == "shape") {
+        if (String(layer.name()).toLowerCase() === "shape") {
           var shapeAttributes = parseShape(layer)
           //log(shapeAttributes)
 
