@@ -35,6 +35,23 @@ module.exports = {
       // "variant": variant, 
       "name": tagName
     }
+  },
+  rgbaToCSS: (color, opacityMultiplier) => {
+    if (!opacityMultiplier) {
+      opacityMultiplier = 1;
+    }
+    var rgba = color.toString().replace(/[a-z]|:/g, "")
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "rgba("
+    temprgba.forEach(function(value, index){
+      if (index < 3) {
+        rgba = rgba + Math.round(255 * value) + ", "
+      } else {
+        rgba = rgba + removeZeros(value * opacityMultiplier) + ", "
+      }
+    })
+    rgba = rgba.slice(0, -2) + ")"
+    return rgba
   }
   
   rgbaToCSS: (color, opacityMultiplier) => {

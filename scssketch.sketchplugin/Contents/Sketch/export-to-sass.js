@@ -17401,8 +17401,40 @@ module.exports = {
       // "variant": variant, 
       "name": tagName
     };
+  },
+  rgbaToCSS: function rgbaToCSS(color, opacityMultiplier) {
+    if (!opacityMultiplier) {
+      opacityMultiplier = 1;
+    }
+
+    var rgba = color.toString().replace(/[a-z]|:/g, "");
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "rgba(";
+    temprgba.forEach(function (value, index) {
+      if (index < 3) {
+        rgba = rgba + Math.round(255 * value) + ", ";
+      } else {
+        rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
+      }
+    });
+    rgba = rgba.slice(0, -2) + ")";
+    return rgba;
   }
 };
+
+function removeZeros(str) {
+  str = String(str);
+  var regEx1 = /[0]+$/;
+  var regEx2 = /[.]$/;
+
+  if (str.indexOf('.') > -1) {
+    str = str.replace(regEx1, ''); // Remove trailing 0's
+  }
+
+  str = str.replace(regEx2, ''); // Remove trailing decimal
+
+  return str;
+}
 
 /***/ }),
 
@@ -17419,22 +17451,20 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 
 module.exports = {
   isGradient: function isGradient(style) {
-    _.forEach(style.value().fills(), function (fill) {
-      if (String(fill.fillType()) === "1") {
-        log("return true");
+    for (var i = 0; i < style.value().fills().length; ++i) {
+      if (String(style.value().fills()[i].fillType()) === "1") {
         return true;
       }
-    });
+    }
   },
   addGradients: function addGradients(gradientStyles) {
     return _.reduce(gradientStyles, function (gradientsArray, style) {
-      var gradients = "";
-      var isLinear = false;
       var theFills = style.value().fills().reverse();
+      var gradients = "";
 
       _.forEach(theFills, function (fill) {
         if (opacityExits(fill)) {
-          setGradient(fill, style);
+          gradients += setGradient(fill, style);
         }
       });
 
@@ -17477,13 +17507,16 @@ function opacityExits(fill) {
 function setGradient(fill, style) {
   var gradientType = getGradientType(fill, style);
   var prefix = "";
+  var gradients = "";
+  var needToFlip = false;
+  var offset = 0;
   var firstStop = ""; //TODO: this is very bad but I don't know exactly what it does
 
   if (gradientType.type == 0) {
     angle = getAngle(fill);
 
     if (angle == 0) {
-      isLinear = true; //TODO: why angle = 0 is not a linear = true? 
+      needToFlip = true; //TODO: why angle = 0 is not a linear = true? 
     }
 
     setPrefixForLinear(fill, angle);
@@ -17494,9 +17527,10 @@ function setGradient(fill, style) {
     var conic = setPrefixForConic(gradientType.stopsArray);
     prefix = conic.prefix;
     firstStop = conic.firstStop;
+    offset = conic.offset;
   }
 
-  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, isLinear);
+  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip);
   gradients += prefix + stops + ", ";
 
   if (offset > 0) {
@@ -17506,6 +17540,8 @@ function setGradient(fill, style) {
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
     gradients += ") 100%), ";
   }
+
+  return gradients;
 }
 
 function getGradientType(fill, style) {
@@ -17535,8 +17571,7 @@ function getAngle(fill) {
   var deltaY = fromY - toY;
   var rad = Math.atan2(deltaY, deltaX); // In radians
 
-  var deg = rad * (180 / Math.PI); //subtract 90 because of sketch
-  // TODO: you mentioned substact
+  var deg = rad * (180 / Math.PI); // add 90 because Sketch
 
   return Math.round((deg + 90) * 10) / 10;
 }
@@ -17544,21 +17579,21 @@ function getAngle(fill) {
 function setPrefixForConic(stopsArray) {
   // it's conic
   var offsetDegrees = 0;
+  var offset;
   var firstStop;
 
-  _.forEach(stopsArray, function (stop, index) {
-    if (index == 0 && parseFloat(stop.position()) != 0) {
-      var offset = parseFloat(stop.position());
-      offsetDegrees = offset * 360;
-      offset = Math.round(10000 * offset) / 100;
-      firstStop = stop; //TODO: why firststop?? 
-    }
-  });
+  if (parseFloat(stopsArray[0].position()) != 0) {
+    offset = parseFloat(stopsArray[0].position());
+    offsetDegrees = offset * 360;
+    offset = Math.round(10000 * offset) / 100;
+    firstStop = stopsArray[0]; //TODO: why firststop?? 
+  }
 
   offsetDegrees = Math.round((90 + offsetDegrees) * 100) / 100;
   return {
     prefix: "conic-gradient(from " + offsetDegrees + "deg, ",
-    firstStop: firstStop
+    firstStop: firstStop,
+    offset: offset
   };
 }
 
@@ -17571,12 +17606,12 @@ function setPrefixForLinear(fill, angle) {
   }
 }
 
-function getGradientStops(stops, offset, gradientOpacity, isLinear) {
+function getGradientStops(stops, offset, gradientOpacity, needToFlip) {
   var result = "";
 
   _.forEach(stops, function (stop) {
     var position = parseFloat(stop.position());
-    var rgba = rgbaToCSS(stop.color(), gradientOpacity);
+    var rgba = common.rgbaToCSS(stop.color(), gradientOpacity);
 
     if (!offset || String(offset).toLowerCase == "nan") {
       offset = 0;
@@ -17585,7 +17620,7 @@ function getGradientStops(stops, offset, gradientOpacity, isLinear) {
     position = 100 * position - offset;
     position = Math.round(100 * position) / 100;
 
-    if (isLinear) {
+    if (needToFlip) {
       position = 100 - position;
     }
 
@@ -18451,7 +18486,7 @@ function constructShadowValue(style, inset) {
   var offsetX = style.offsetX();
   var offsetY = style.offsetY();
   var blurRadius = style.blurRadius();
-  var rgba = rgbaToCSS(style.color());
+  var rgba = common.rgbaToCSS(style.color());
   result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px ").concat(rgba, ", ");
 
   if (inset == "inset") {
@@ -18459,39 +18494,6 @@ function constructShadowValue(style, inset) {
   }
 
   return result;
-}
-
-function rgbaToCSS(color, opacityMultiplier) {
-  if (!opacityMultiplier) {
-    opacityMultiplier = 1;
-  }
-
-  var rgba = color.toString().replace(/[a-z]|:/g, "");
-  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-  rgba = "rgba(";
-  temprgba.forEach(function (value, index) {
-    if (index < 3) {
-      rgba = rgba + Math.round(255 * value) + ", ";
-    } else {
-      rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
-    }
-  });
-  rgba = rgba.slice(0, -2) + ")";
-  return rgba;
-}
-
-function removeZeros(str) {
-  str = String(str);
-  var regEx1 = /[0]+$/;
-  var regEx2 = /[.]$/;
-
-  if (str.indexOf('.') > -1) {
-    str = str.replace(regEx1, ''); // Remove trailing 0's
-  }
-
-  str = str.replace(regEx2, ''); // Remove trailing decimal
-
-  return str;
 }
 
 /***/ })

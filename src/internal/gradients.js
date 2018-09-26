@@ -1,12 +1,13 @@
 var _ = require("lodash")
+const common = require("./common");
 
 module.exports = {
   isGradient: (style) => {
-    _.forEach(style.value().fills(), (fill) => {
-      if (String(fill.fillType()) === "1") {
+    for (var i = 0; i < style.value().fills().length; ++i) {
+      if (String(style.value().fills()[i].fillType()) === "1") {
         return true
       }
-    })
+    }
   },
   
   addGradients: (gradientStyles) => {
@@ -19,16 +20,16 @@ module.exports = {
                 }
               })
 
-              gradients = gradients.slice(0, -2);
-              var thisName = String(style.name())
-              var tag = common.getTag(thisName)
-              if (tag.isTag || thisName.indexOf("]") > 0) {
-                thisName = tag.name.trim()
-              }
-              gradientsArray.push({"name": _.kebabCase(thisName), "gradient": gradients})
+      gradients = gradients.slice(0, -2);
+      var thisName = String(style.name())
+      var tag = common.getTag(thisName)
+      if (tag.isTag || thisName.indexOf("]") > 0) {
+        thisName = tag.name.trim()
+      }
+      gradientsArray.push({"name": _.kebabCase(thisName), "gradient": gradients})
 
-              return gradientsArray
-            }, [])  
+      return gradientsArray
+    }, [])  
   },
   
   writeGradients: (gradients) => {
