@@ -13,9 +13,10 @@ module.exports = {
     var otherStyles = _.differenceWith(sortedStyles, shadowStyles, _.isEqual)
 
     var gradientStyles = _.filter(otherStyles, (style) => { return gradients.isGradient(style) })
-
-    otherStyles = _.differenceWith(otherStyles, gradientStyles, _.isEqual)
+    log(gradientStyles.length)
     
+    otherStyles = _.differenceWith(otherStyles, gradientStyles, _.isEqual)
+
     var colorStyles = _.filter(otherStyles, (style) => { return colors.isColor(style) })
 
     return {

@@ -17329,18 +17329,10 @@ module.exports = {
     return tag.isTag && tag.ramp != "x" || !tag.isTag;
   },
   addColors: function addColors(colorStyles) {
-    log(colorStyles.length);
     return _.reduce(colorStyles, function (colors, style) {
       var tagName = common.getTag(String(style.name()));
-
-      if (!tagName.isTag) {
-        tagName = {
-          "name": String(style.name())
-        };
-      }
-
       var tmp = {
-        name: common.hyphenize(tagName.name) + "-color",
+        name: _.kebabCase(tagName.name) + "-color",
         value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
       };
       colors.push(tmp);
@@ -17349,7 +17341,6 @@ module.exports = {
   },
   writeColors: function writeColors(colors) {
     var styles = "";
-    log(colors.length);
 
     if (colors.length > 0) {
       styles += "// COLORS\n";
@@ -17375,9 +17366,6 @@ module.exports = {
 /***/ (function(module, exports) {
 
 module.exports = {
-  hyphenize: function hyphenize(str) {
-    return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-  },
   // TODO: refactoring
   getTag: function getTag(name) {
     var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
@@ -17388,7 +17376,7 @@ module.exports = {
         // selector,
     // variant,
     // cssSelector,
-    tagName;
+    tagName = name;
 
     if (match) {
       isTag = true;
@@ -17432,7 +17420,8 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 module.exports = {
   isGradient: function isGradient(style) {
     _.forEach(style.value().fills(), function (fill) {
-      if (String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length) {
+      if (String(fill.fillType()) === "1") {
+        log("return true");
         return true;
       }
     });
@@ -17458,7 +17447,7 @@ module.exports = {
       }
 
       gradientsArray.push({
-        "name": common.hyphenize(thisName),
+        "name": _.kebabCase(thisName),
         "gradient": gradients
       });
       return gradientsArray;
@@ -17471,7 +17460,7 @@ module.exports = {
       styles = styles + "// GRADIENTS\n";
 
       _.forEach(gradients, function (gradient) {
-        styles += "$".concat(hyphenize(gradient.name), ": ").concat(gradient.gradient, ";\n");
+        styles += "$".concat(_.kebabCase(gradient.name), ": ").concat(gradient.gradient, ";\n");
       });
 
       styles += "\n";
@@ -17642,6 +17631,7 @@ module.exports = {
       return gradients.isGradient(style);
     });
 
+    log(gradientStyles.length);
     otherStyles = _.differenceWith(otherStyles, gradientStyles, _.isEqual);
 
     var colorStyles = _.filter(otherStyles, function (style) {
@@ -18108,10 +18098,6 @@ function getTag(name) {
   };
 }
 
-function hyphenize(str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-}
-
 function getFontAndWeight(fontName) {
   fontName = String(fontName);
   var hyphenIndex = fontName.indexOf("-"),
@@ -18171,7 +18157,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var tag = getTag(styleName);
 
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
 
     if (tag.isTag && tag.variant) {
@@ -18196,7 +18182,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
         desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
       }
 
-      if (!desktopTag.isTag) desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
+      if (!desktopTag.isTag) desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
 
       if (tag.isTag && desktopTag.selector == tag.selector && !found) {
         found = true;
@@ -18238,7 +18224,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var tag = getTag(styleName);
 
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
 
     if (tag.isTag && tag.variant) {
@@ -18263,7 +18249,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-  tag.tag = hyphenize(tag.tag);
+  tag.tag = _.kebabCase(tag.tag);
   var pre = "$" + tag.tag,
       output = ""; // SET UP FONT FAMILY STUFF
 
@@ -18363,12 +18349,12 @@ function outputMixin(tag, indent, isResponsive) {
   }
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n";
-    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n";
+    output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-" + attribute + " {\n";
+    output += indent + "  " + attribute + ": $" + _.kebabCase(tag.tag) + "-" + attribute + ";\n";
 
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n";
-      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n";
+      output += indent + "    " + attribute + ": $d" + _.kebabCase(tag.selector) + "-" + attribute + ";\n";
       output += indent + "  }\n";
     }
 
@@ -18376,10 +18362,10 @@ function outputMixin(tag, indent, isResponsive) {
   }); // now tie it all together
 
 
-  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n";
+  output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-text-style {\n";
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" + attribute + ";\n";
+    output += indent + "  @include " + _.kebabCase(tag.cssSelector) + "-" + attribute + ";\n";
   });
 
   output += indent + "}\n\n";
@@ -18413,7 +18399,7 @@ module.exports = {
       }
 
       tmp = {
-        name: common.hyphenize(thisName),
+        name: _.kebabCase(thisName),
         value: getShadows(style.value())
       };
       shaddows.push(tmp);

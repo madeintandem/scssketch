@@ -1,10 +1,11 @@
 var _ = require("lodash")
-const common = require("./common")
 
 module.exports = {
   isGradient: (style) => {
-    _.find(style.value().fills(), (fill) => { 
-      return String(fill.fillType()) === "1"; 
+    _.forEach(style.value().fills(), (fill) => {
+      if (String(fill.fillType()) === "1") {
+        return true
+      }
     })
   },
   
