@@ -486,6 +486,7 @@ function outputSetupVars(style, baseSize, fonts) {
   output += pre + "-font-family: $" + fontType + ", $" + fontType + "-fallback-fonts;\n"
   if (outputFontWeight) {
     output += pre + "-font-weight: $" + fontType + "-weight;\n"
+    output += pre + "-font-style: $" + fontType + "-style;\n"
   }
   fontSize = style.size + "px"
   if (useRem) {

@@ -91,6 +91,70 @@ var exports =
 /************************************************************************/
 /******/ ({
 
+/***/ "./node_modules/@skpm/builder/node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+
+/***/ "./node_modules/@skpm/builder/node_modules/webpack/buildin/module.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/lodash/lodash.js":
 /*!***************************************!*\
   !*** ./node_modules/lodash/lodash.js ***!
@@ -17196,71 +17260,7 @@ var exports =
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js"), __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
-
-/***/ }),
-
-/***/ "./node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-
-/***/ "./node_modules/webpack/buildin/module.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/module.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../@skpm/builder/node_modules/webpack/buildin/global.js */ "./node_modules/@skpm/builder/node_modules/webpack/buildin/global.js"), __webpack_require__(/*! ./../@skpm/builder/node_modules/webpack/buildin/module.js */ "./node_modules/@skpm/builder/node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
@@ -17356,19 +17356,23 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 module.exports = {
   isColor: function isColor(style) {
     var tag = common.getTag(String(style.name())); // TODO: this is confusing
+    // If the style name has a tag and the ramp isn't "x", OR If the style name isn't a tag
 
     return tag.isTag && tag.ramp != "x" || !tag.isTag;
   },
   addColors: function addColors(colorStyles) {
+    log(colorStyles.length);
     return _.reduce(colorStyles, function (colors, style) {
-      var tagName = tag;
+      var tagName = common.getTag(String(style.name()));
 
-      if (tag.isTag) {
-        tagName = tag.name.trim();
+      if (!tagName.isTag) {
+        tagName = {
+          "name": String(style.name())
+        };
       }
 
       var tmp = {
-        name: common.hyphenize(tagName) + "-color",
+        name: common.hyphenize(tagName.name) + "-color",
         value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
       };
       colors.push(tmp);
@@ -17377,9 +17381,10 @@ module.exports = {
   },
   writeColors: function writeColors(colors) {
     var styles = "";
+    log(colors.length);
 
     if (colors.length > 0) {
-      styles = styles + "// COLORS\n";
+      styles += "// COLORS\n";
 
       _.forEach(colors, function (color) {
         styles += "$".concat(color.name, ": ").concat(color.value, ";\n");
@@ -17411,10 +17416,11 @@ module.exports = {
         tag = name,
         isTag = false,
         match = regex.exec(name),
-        ramp; // selector,
+        ramp,
+        // selector,
     // variant,
     // cssSelector,
-    // tagName
+    tagName;
 
     if (match) {
       isTag = true;
@@ -17425,18 +17431,19 @@ module.exports = {
       //   cssSelector = "h" + selector
       // }
       // variant = match[4]
-      // tagName = match[5]
+
+      tagName = match[5];
     } // TODO: doesn't seem like we need all these details
 
 
     return {
       "isTag": isTag,
       "tag": tag,
-      "ramp": ramp // "selector": selector, 
+      "ramp": ramp,
+      // "selector": selector, 
       // "cssSelector": cssSelector, 
       // "variant": variant, 
-      // "name": tagName
-
+      "name": tagName
     };
   }
 };
@@ -17661,14 +17668,16 @@ module.exports = {
       return shadows.isShadow(style);
     });
 
-    var otherStyles = _.difference(sharedStyles, shadowStyles);
-
-    var colorStyles = _.filter(otherStyles, function (style) {
-      return colors.isColor(style);
-    });
+    var otherStyles = _.differenceWith(sortedStyles, shadowStyles, _.isEqual);
 
     var gradientStyles = _.filter(otherStyles, function (style) {
       return gradients.isGradient(style);
+    });
+
+    otherStyles = _.differenceWith(otherStyles, gradientStyles, _.isEqual);
+
+    var colorStyles = _.filter(otherStyles, function (style) {
+      return colors.isColor(style);
     });
 
     return {
@@ -18306,6 +18315,7 @@ function outputSetupVars(style, baseSize, fonts) {
 
   if (outputFontWeight) {
     output += pre + "-font-weight: $" + fontType + "-weight;\n";
+    output += pre + "-font-style: $" + fontType + "-style;\n";
   }
 
   fontSize = style.size + "px";
@@ -18488,7 +18498,7 @@ function constructShadowValue(style, inset) {
   var offsetY = style.offsetY();
   var blurRadius = style.blurRadius();
   var rgba = rgbaToCSS(style.color());
-  result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px rgba").concat(rgba, ", ");
+  result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px ").concat(rgba, ", ");
 
   if (inset == "inset") {
     result = inset + " " + result;

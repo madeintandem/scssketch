@@ -9,11 +9,11 @@ module.exports = {
         tag = name,
         isTag = false,
         match = regex.exec(name),
-        ramp
+        ramp,
         // selector,
         // variant,
         // cssSelector,
-        // tagName
+        tagName
 
     if (match) {
       isTag = true
@@ -25,18 +25,18 @@ module.exports = {
       //   cssSelector = "h" + selector
       // }
       // variant = match[4]
-      // tagName = match[5]
+      tagName = match[5]
     }
     
     // TODO: doesn't seem like we need all these details
     return {
       "isTag": isTag, 
       "tag": tag, 
-      "ramp": ramp
+      "ramp": ramp,
       // "selector": selector, 
       // "cssSelector": cssSelector, 
       // "variant": variant, 
-      // "name": tagName
+      "name": tagName
     }
   }
 
