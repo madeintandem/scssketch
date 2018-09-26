@@ -17380,12 +17380,14 @@ module.exports = {
     if (match) {
       isTag = true;
       tag = match[1].toLowerCase();
-      ramp = match[2].toLowerCase(); // selector = match[3].toLowerCase()
-      // cssSelector = match[3].toLowerCase()
-      // if (cssSelector != "p") {
-      //   cssSelector = "h" + selector
-      // }
-      // variant = match[4]
+      ramp = match[2].toLowerCase();
+      selector = match[3].toLowerCase();
+      cssSelector = match[3].toLowerCase();
+
+      if (cssSelector != "p") {
+        cssSelector = "h" + selector;
+      } // variant = match[4]
+
 
       tagName = match[5];
     } // TODO: doesn't seem like we need all these details
@@ -17395,8 +17397,8 @@ module.exports = {
       "isTag": isTag,
       "tag": tag,
       "ramp": ramp,
-      // "selector": selector, 
-      // "cssSelector": cssSelector, 
+      "selector": selector,
+      "cssSelector": cssSelector,
       // "variant": variant, 
       "name": tagName
     };
@@ -17699,6 +17701,8 @@ module.exports = {
 
 var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
+var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
+
 var useRem = true;
 var defaultBaseFontSize = 16;
 var breakpointVariable = "$breakpoint";
@@ -17766,7 +17770,7 @@ module.exports = {
 
     var typeStyles = getUniqueStyles(sortedStyles);
     typeStyles.forEach(function (thisStyle) {
-      var tag = getTag(String(thisStyle.name()));
+      var tag = common.getTag(String(thisStyle.name()));
       var style = getTextStyleAsJson(thisStyle);
 
       if (tag.ramp == "m") {
@@ -17874,8 +17878,7 @@ module.exports = {
       var isParagraph = false;
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute));
-      var tag = getTag(String(style.name()));
-      var attributes = style.style().textStyle().attributes();
+      var tag = common.getTag(String(style.name()));
       var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
 
       if (tag.isTag && tag.cssSelector == "p") {
@@ -18030,7 +18033,7 @@ function getUniqueStyles(styles) {
   styles.forEach(function (style) {
     var found = false;
     uniqueStyles.forEach(function (sortedStyle) {
-      if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
+      if (common.getTag(String(style.name())).tag == common.getTag(String(sortedStyle.name())).tag) {
         found = true;
       }
     });
@@ -18074,7 +18077,7 @@ function getTextStyleAsJson(style) {
 function popPToTop(styles) {
   var hasParagraph = false;
   styles.forEach(function (style, indx) {
-    if (getTag(String(style.name)).selector == "p") {
+    if (common.getTag(String(style.name)).selector == "p") {
       array_move(styles, indx, 0);
       hasParagraph = true;
     }
@@ -18099,43 +18102,6 @@ function array_move(arr, old_index, new_index) {
 }
 
 ;
-
-function getTag(name) {
-  var regex = /^\[(([A-Za-z])*(\d\.*[0-9]*|[\P|\p]+))(.*)\]\s(.*)/g,
-      tag = name,
-      isTag = false,
-      match = regex.exec(name),
-      ramp,
-      selector,
-      variant,
-      cssSelector,
-      tagName;
-
-  if (match) {
-    isTag = true;
-    tag = match[1].toLowerCase();
-    ramp = match[2].toLowerCase();
-    selector = match[3].toLowerCase();
-    cssSelector = match[3].toLowerCase();
-
-    if (cssSelector != "p") {
-      cssSelector = "h" + selector;
-    }
-
-    variant = match[4];
-    tagName = match[5];
-  }
-
-  return {
-    "isTag": isTag,
-    "tag": tag,
-    "ramp": ramp,
-    "selector": selector,
-    "cssSelector": cssSelector,
-    "variant": variant,
-    "name": tagName
-  };
-}
 
 function getFontAndWeight(fontName) {
   fontName = String(fontName);
@@ -18193,7 +18159,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var desktopTag;
     var desktopStyleName;
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
 
     if (!tag.isTag) {
       tag.tag = _.kebabCase(tag.tag);
@@ -18215,7 +18181,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 
     _.forEach(desktopStyles, function (desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
-      desktopTag = getTag(desktopStyleName);
+      desktopTag = common.getTag(desktopStyleName);
 
       if (desktopTag.isTag && desktopTag.variant) {
         desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
@@ -18260,7 +18226,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 
   _.forEach(exceptionDesktopStyles, function (thisStyle) {
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
 
     if (!tag.isTag) {
       tag.tag = _.kebabCase(tag.tag);
@@ -18287,7 +18253,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
-      tag = getTag(styleName);
+      tag = common.getTag(styleName);
 
   if (!tag.isTag) {
     tag.tag = _.kebabCase(tag.tag);
