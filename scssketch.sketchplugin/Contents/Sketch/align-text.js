@@ -17355,10 +17355,9 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 
 module.exports = {
   isColor: function isColor(style) {
-    var tag = common.getTag(String(style.name())); // TODO: this is confusing
-    // If the style name has a tag and the ramp isn't "x", OR If the style name isn't a tag
+    var tag = common.getTag(String(style.name())); // if the tag ramp isn't "x", export it
 
-    return tag.isTag && tag.ramp != "x" || !tag.isTag;
+    return tag.ramp != "x";
   },
   addColors: function addColors(colorStyles) {
     return _.reduce(colorStyles, function (colors, style) {
@@ -17404,7 +17403,7 @@ module.exports = {
         tag = name,
         isTag = false,
         match = regex.exec(name),
-        ramp,
+        ramp = "",
         // selector,
     // variant,
     // cssSelector,
@@ -17565,7 +17564,8 @@ function setGradient(fill, style) {
   gradients += prefix + stops + ", ";
 
   if (gradientType.type == 2) {
-    // We are making a conic gradient, so we need to add in a thingie
+    // We are making a conic gradient, so we need to add
+    // the first stop again at the 100% position
     gradients = gradients.slice(0, -3) + ", ";
     gradients += getGradientStops([gradientType.stopsArray[0]]);
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
@@ -18313,7 +18313,11 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-  tag.tag = _.kebabCase(tag.tag);
+
+  if (!tag.isTag) {
+    tag.tag = _.kebabCase(tag.tag);
+  }
+
   var pre = "$" + tag.tag,
       output = ""; // SET UP FONT FAMILY STUFF
 
@@ -18401,9 +18405,8 @@ function outputMixin(tag, indent, isResponsive) {
   indent = text;
 
   if (!tag.isTag) {
-    var newTag = tag.tag;
-    tag.tag = newTag;
-    tag.cssSelector = newTag;
+    tag.tag = _.kebabCase(tag.tag);
+    tag.cssSelector = tag.tag;
   }
 
   var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"];
@@ -18413,12 +18416,12 @@ function outputMixin(tag, indent, isResponsive) {
   }
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-" + attribute + " {\n";
-    output += indent + "  " + attribute + ": $" + _.kebabCase(tag.tag) + "-" + attribute + ";\n";
+    output += indent + "@mixin " + tag.cssSelector + "-" + attribute + " {\n";
+    output += indent + "  " + attribute + ": $" + tag.tag + "-" + attribute + ";\n";
 
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n";
-      output += indent + "    " + attribute + ": $d" + _.kebabCase(tag.selector) + "-" + attribute + ";\n";
+      output += indent + "    " + attribute + ": $d" + tag.selector + "-" + attribute + ";\n";
       output += indent + "  }\n";
     }
 
@@ -18426,10 +18429,10 @@ function outputMixin(tag, indent, isResponsive) {
   }); // now tie it all together
 
 
-  output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-text-style {\n";
+  output += indent + "@mixin " + tag.cssSelector + "-text-style {\n";
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "  @include " + _.kebabCase(tag.cssSelector) + "-" + attribute + ";\n";
+    output += indent + "  @include " + tag.cssSelector + "-" + attribute + ";\n";
   });
 
   output += indent + "}\n\n";
