@@ -14,7 +14,7 @@ module.exports = {
                 thisName = tag.name.trim()
               }
               tmp = {
-                name: common.hyphenize(thisName),
+                name: _.kebabCase(thisName),
                 value: getShadows(style.value())
               }
               shaddows.push(tmp)      

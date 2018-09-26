@@ -331,9 +331,6 @@ function getTag (name) {
   }
   return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant, "name": tagName}
 }
-function hyphenize (str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-}
 function getFontAndWeight (fontName) {
   fontName = String(fontName)
   var hyphenIndex = fontName.indexOf("-"),
@@ -388,7 +385,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
     if (tag.isTag && tag.variant) {
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
@@ -408,7 +405,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
         desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
       }
       if (!desktopTag.isTag)
-      desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
+      desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
       if (tag.isTag && desktopTag.selector == tag.selector && !found) {
         found = true;
         thisDesktopStyle = desktopStyle
@@ -445,7 +442,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var styleName = String(thisStyle.name);
     var tag = getTag(styleName);
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
     if (tag.isTag && tag.variant) {
       var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
@@ -467,7 +464,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 function outputSetupVars(style, baseSize, fonts) {
   var styleName = String(style.name),
       tag = getTag(styleName);
-  tag.tag = hyphenize(tag.tag)
+  tag.tag = _.kebabCase(tag.tag)
   var pre = "$" + tag.tag,
       output = "";
 
@@ -547,20 +544,20 @@ function outputMixin (tag, indent, isResponsive) {
     attributes = ["font-family", "font-weight", "font-style", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   }
   _.forEach(attributes, function(attribute){
-    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n"
-    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n"
+    output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-" + attribute + " {\n"
+    output += indent + "  " + attribute + ": $" + _.kebabCase(tag.tag) + "-" + attribute + ";\n"
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n"
+      output += indent + "    " + attribute + ": $d" + _.kebabCase(tag.selector) + "-" + attribute + ";\n"
       output += indent + "  }\n"
     }
     output += indent + "}\n"
   })
   // now tie it all together
 
-  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n"
+  output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-text-style {\n"
   _.forEach(attributes, function(attribute){
-    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" +attribute + ";\n"
+    output += indent + "  @include " + _.kebabCase(tag.cssSelector) + "-" +attribute + ";\n"
   })
   output += indent + "}\n\n"
   return output

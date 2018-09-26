@@ -1,7 +1,4 @@
 module.exports = {
-  hyphenize: (str) => {
-    return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-  },
   
   // TODO: refactoring
   getTag: (name) => {  
@@ -13,7 +10,7 @@ module.exports = {
         // selector,
         // variant,
         // cssSelector,
-        tagName
+        tagName = name
 
     if (match) {
       isTag = true

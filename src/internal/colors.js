@@ -15,11 +15,8 @@ module.exports = {
     log(colorStyles.length)
     return _.reduce(colorStyles, (colors, style) => {
       var tagName = common.getTag(String(style.name()))
-      if (!tagName.isTag) {
-        tagName = {"name": String(style.name())}
-      }
       var tmp = {
-        name: common.hyphenize(tagName.name) + "-color",
+        name: _.kebabCase(tagName.name) + "-color",
         value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
       }
       colors.push(tmp)
