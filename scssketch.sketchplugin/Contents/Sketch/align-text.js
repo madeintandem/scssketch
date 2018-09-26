@@ -17542,13 +17542,13 @@ function setGradient(fill, style) {
   var gradients = "";
   var needToFlip = false;
   var offset = 0;
-  var firstStop = ""; //TODO: this is very bad but I don't know exactly what it does
 
   if (gradientType.type == 0) {
     angle = getAngle(fill);
 
     if (angle == 0) {
-      needToFlip = true; //TODO: why angle = 0 is not a linear = true? 
+      needToFlip = true; // Sketch randomly flips stop positions when
+      // the angle is 0 so we need to flip them back
     }
 
     setPrefixForLinear(fill, angle);
@@ -17558,16 +17558,16 @@ function setGradient(fill, style) {
   } else if (gradientType.type == 2) {
     var conic = setPrefixForConic(gradientType.stopsArray);
     prefix = conic.prefix;
-    firstStop = conic.firstStop;
     offset = conic.offset;
   }
 
   var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip);
   gradients += prefix + stops + ", ";
 
-  if (offset > 0) {
+  if (gradientType.type == 2) {
+    // We are making a conic gradient, so we need to add in a thingie
     gradients = gradients.slice(0, -3) + ", ";
-    gradients += getGradientStops([firstStop]);
+    gradients += getGradientStops([gradientType.stopsArray[0]]);
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
     gradients += ") 100%), ";
@@ -17612,19 +17612,16 @@ function setPrefixForConic(stopsArray) {
   // it's conic
   var offsetDegrees = 0;
   var offset;
-  var firstStop;
 
   if (parseFloat(stopsArray[0].position()) != 0) {
     offset = parseFloat(stopsArray[0].position());
     offsetDegrees = offset * 360;
     offset = Math.round(10000 * offset) / 100;
-    firstStop = stopsArray[0]; //TODO: why firststop?? 
   }
 
   offsetDegrees = Math.round((90 + offsetDegrees) * 100) / 100;
   return {
     prefix: "conic-gradient(from " + offsetDegrees + "deg, ",
-    firstStop: firstStop,
     offset: offset
   };
 }

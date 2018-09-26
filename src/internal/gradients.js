@@ -93,6 +93,10 @@ function setGradient(fill, style) {
   return gradients
 }
 
+
+
+
+
 function getGradientType(fill, style) {
   var stopsArray = fill.gradient().stops()
   stopsArray = _.sortBy(stopsArray, [style => style.position()], ["desc"])
