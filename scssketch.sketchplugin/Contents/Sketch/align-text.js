@@ -17545,12 +17545,13 @@ function setGradient(fill, style) {
   if (gradientType.type == 0) {
     angle = getAngle(fill);
 
-    if (angle == 0) {
-      needToFlip = true; // Sketch randomly flips stop positions when
-      // the angle is 0 so we need to flip them back
+    if (angle != 0) {
+      needToFlip = true;
     }
 
-    setPrefixForLinear(fill, angle);
+    prefix = setPrefixForLinear(fill, angle, gradientType.stopsArray);
+    gradientType.stopsArray = prefix.stopsArray;
+    prefix = prefix.prefix;
   } else if (gradientType.type == 1) {
     // it's radial
     prefix = "radial-gradient(ellipse at center, ";
@@ -17626,12 +17627,18 @@ function setPrefixForConic(stopsArray) {
   };
 }
 
-function setPrefixForLinear(fill, angle) {
+function setPrefixForLinear(fill, angle, stops) {
   if (angle == 0) {
-    return "linear-gradient(";
+    return {
+      "stopsArray": stops,
+      "prefix": "linear-gradient("
+    };
   } else {
-    gradientType.stopsArray.reverse();
-    return "linear-gradient(" + angle + "deg, ";
+    stops.reverse();
+    return {
+      "stopsArray": stops,
+      "prefix": "linear-gradient(" + angle + "deg, "
+    };
   }
 }
 
@@ -17647,12 +17654,12 @@ function getGradientStops(stops, offset, gradientOpacity, needToFlip) {
     }
 
     position = 100 * position - offset;
-    position = Math.round(100 * position) / 100;
 
-    if (needToFlip) {
+    if (needToFlip === true) {
       position = 100 - position;
     }
 
+    position = Math.round(100 * position) / 100;
     result = result + rgba + " " + position + "%, ";
   });
 
