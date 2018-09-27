@@ -3,7 +3,7 @@ const common = require("./common")
 
 module.exports = {
   isGradient: (style) => {
-    _.find(style.value().fills(), (fill) => { 
+    return _.find(style.value().fills(), (fill) => { 
       return String(fill.fillType()) === "1"; 
     })
   },

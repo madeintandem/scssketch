@@ -17355,24 +17355,14 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 
 module.exports = {
   isColor: function isColor(style) {
-    var tag = common.getTag(String(style.name())); // TODO: this is confusing
-    // If the style name has a tag and the ramp isn't "x", OR If the style name isn't a tag
-
-    return tag.isTag && tag.ramp != "x" || !tag.isTag;
+    var tag = common.getTag(String(style.name()));
+    return tag.ramp != "x";
   },
   addColors: function addColors(colorStyles) {
-    log(colorStyles.length);
     return _.reduce(colorStyles, function (colors, style) {
       var tagName = common.getTag(String(style.name()));
-
-      if (!tagName.isTag) {
-        tagName = {
-          "name": String(style.name())
-        };
-      }
-
       var tmp = {
-        name: common.hyphenize(tagName.name) + "-color",
+        name: _.kebabCase(tagName.name) + "-color",
         value: "#" + style.value().firstEnabledFill().color().immutableModelObject().hexValue()
       };
       colors.push(tmp);
@@ -17381,7 +17371,6 @@ module.exports = {
   },
   writeColors: function writeColors(colors) {
     var styles = "";
-    log(colors.length);
 
     if (colors.length > 0) {
       styles += "// COLORS\n";
@@ -17407,30 +17396,29 @@ module.exports = {
 /***/ (function(module, exports) {
 
 module.exports = {
-  hyphenize: function hyphenize(str) {
-    return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-  },
   // TODO: refactoring
   getTag: function getTag(name) {
     var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
         tag = name,
         isTag = false,
         match = regex.exec(name),
-        ramp,
-        // selector,
-    // variant,
-    // cssSelector,
-    tagName;
+        ramp = "",
+        selector,
+        // variant,
+    cssSelector,
+        tagName = name;
 
     if (match) {
       isTag = true;
       tag = match[1].toLowerCase();
-      ramp = match[2].toLowerCase(); // selector = match[3].toLowerCase()
-      // cssSelector = match[3].toLowerCase()
-      // if (cssSelector != "p") {
-      //   cssSelector = "h" + selector
-      // }
-      // variant = match[4]
+      ramp = match[2].toLowerCase();
+      selector = match[3].toLowerCase();
+      cssSelector = match[3].toLowerCase();
+
+      if (cssSelector != "p") {
+        cssSelector = "h" + selector;
+      } // variant = match[4]
+
 
       tagName = match[5];
     } // TODO: doesn't seem like we need all these details
@@ -17440,13 +17428,45 @@ module.exports = {
       "isTag": isTag,
       "tag": tag,
       "ramp": ramp,
-      // "selector": selector, 
-      // "cssSelector": cssSelector, 
+      "selector": selector,
+      "cssSelector": cssSelector,
       // "variant": variant, 
       "name": tagName
     };
+  },
+  rgbaToCSS: function rgbaToCSS(color, opacityMultiplier) {
+    if (!opacityMultiplier) {
+      opacityMultiplier = 1;
+    }
+
+    var rgba = color.toString().replace(/[a-z]|:/g, "");
+    var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
+    rgba = "rgba(";
+    temprgba.forEach(function (value, index) {
+      if (index < 3) {
+        rgba = rgba + Math.round(255 * value) + ", ";
+      } else {
+        rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
+      }
+    });
+    rgba = rgba.slice(0, -2) + ")";
+    return rgba;
   }
 };
+
+function removeZeros(str) {
+  str = String(str);
+  var regEx1 = /[0]+$/;
+  var regEx2 = /[.]$/;
+
+  if (str.indexOf('.') > -1) {
+    str = str.replace(regEx1, ''); // Remove trailing 0's
+  }
+
+  str = str.replace(regEx2, ''); // Remove trailing decimal
+
+  return str;
+}
 
 /***/ }),
 
@@ -17463,21 +17483,18 @@ var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
 
 module.exports = {
   isGradient: function isGradient(style) {
-    _.forEach(style.value().fills(), function (fill) {
-      if (String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length) {
-        return true;
-      }
+    return _.find(style.value().fills(), function (fill) {
+      return String(fill.fillType()) === "1";
     });
   },
   addGradients: function addGradients(gradientStyles) {
     return _.reduce(gradientStyles, function (gradientsArray, style) {
-      var gradients = "";
-      var isLinear = false;
       var theFills = style.value().fills().reverse();
+      var gradients = "";
 
       _.forEach(theFills, function (fill) {
         if (opacityExits(fill)) {
-          setGradient(fill, style);
+          gradients += setGradient(fill, style);
         }
       });
 
@@ -17490,7 +17507,7 @@ module.exports = {
       }
 
       gradientsArray.push({
-        "name": common.hyphenize(thisName),
+        "name": _.kebabCase(thisName),
         "gradient": gradients
       });
       return gradientsArray;
@@ -17503,7 +17520,7 @@ module.exports = {
       styles = styles + "// GRADIENTS\n";
 
       _.forEach(gradients, function (gradient) {
-        styles += "$".concat(hyphenize(gradient.name), ": ").concat(gradient.gradient, ";\n");
+        styles += "$".concat(_.kebabCase(gradient.name), ": ").concat(gradient.gradient, ";\n");
       });
 
       styles += "\n";
@@ -17520,35 +17537,41 @@ function opacityExits(fill) {
 function setGradient(fill, style) {
   var gradientType = getGradientType(fill, style);
   var prefix = "";
-  var firstStop = ""; //TODO: this is very bad but I don't know exactly what it does
+  var gradients = "";
+  var needToFlip = false;
+  var offset = 0;
 
   if (gradientType.type == 0) {
     angle = getAngle(fill);
 
-    if (angle == 0) {
-      isLinear = true; //TODO: why angle = 0 is not a linear = true? 
+    if (angle != 0) {
+      needToFlip = true;
     }
 
-    setPrefixForLinear(fill, angle);
+    prefix = setPrefixForLinear(fill, angle, gradientType.stopsArray);
+    gradientType.stopsArray = prefix.stopsArray;
+    prefix = prefix.prefix;
   } else if (gradientType.type == 1) {
     // it's radial
     prefix = "radial-gradient(ellipse at center, ";
   } else if (gradientType.type == 2) {
     var conic = setPrefixForConic(gradientType.stopsArray);
     prefix = conic.prefix;
-    firstStop = conic.firstStop;
+    offset = conic.offset;
   }
 
-  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, isLinear);
+  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip);
   gradients += prefix + stops + ", ";
 
-  if (offset > 0) {
+  if (gradientType.type == 2) {
     gradients = gradients.slice(0, -3) + ", ";
-    gradients += getGradientStops([firstStop]);
+    gradients += getGradientStops([gradientType.stopsArray[0]]);
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
     gradients = gradients.slice(0, gradients.lastIndexOf(")"));
     gradients += ") 100%), ";
   }
+
+  return gradients;
 }
 
 function getGradientType(fill, style) {
@@ -17579,7 +17602,6 @@ function getAngle(fill) {
   var rad = Math.atan2(deltaY, deltaX); // In radians
 
   var deg = rad * (180 / Math.PI); //subtract 90 because of sketch
-  // TODO: you mentioned substact
 
   return Math.round((deg + 90) * 10) / 10;
 }
@@ -17587,51 +17609,54 @@ function getAngle(fill) {
 function setPrefixForConic(stopsArray) {
   // it's conic
   var offsetDegrees = 0;
-  var firstStop;
+  var offset;
 
-  _.forEach(stopsArray, function (stop, index) {
-    if (index == 0 && parseFloat(stop.position()) != 0) {
-      var offset = parseFloat(stop.position());
-      offsetDegrees = offset * 360;
-      offset = Math.round(10000 * offset) / 100;
-      firstStop = stop; //TODO: why firststop?? 
-    }
-  });
+  if (parseFloat(stopsArray[0].position()) != 0) {
+    offset = parseFloat(stopsArray[0].position());
+    offsetDegrees = offset * 360;
+    offset = Math.round(10000 * offset) / 100;
+  }
 
   offsetDegrees = Math.round((90 + offsetDegrees) * 100) / 100;
   return {
     prefix: "conic-gradient(from " + offsetDegrees + "deg, ",
-    firstStop: firstStop
+    offset: offset
   };
 }
 
-function setPrefixForLinear(fill, angle) {
+function setPrefixForLinear(fill, angle, stops) {
   if (angle == 0) {
-    return "linear-gradient(";
+    return {
+      "stopsArray": stops,
+      "prefix": "linear-gradient("
+    };
   } else {
-    gradientType.stopsArray.reverse();
-    return "linear-gradient(" + angle + "deg, ";
+    stops.reverse();
+    return {
+      "stopsArray": stops,
+      "prefix": "linear-gradient(" + angle + "deg, "
+    };
   }
 }
 
-function getGradientStops(stops, offset, gradientOpacity, isLinear) {
+function getGradientStops(stops, offset, gradientOpacity, needToFlip) {
   var result = "";
 
   _.forEach(stops, function (stop) {
     var position = parseFloat(stop.position());
-    var rgba = rgbaToCSS(stop.color(), gradientOpacity);
+    var rgba = common.rgbaToCSS(stop.color(), gradientOpacity);
 
     if (!offset || String(offset).toLowerCase == "nan") {
       offset = 0;
     }
 
     position = 100 * position - offset;
-    position = Math.round(100 * position) / 100;
 
-    if (isLinear) {
+    if (needToFlip === true) {
       position = 100 - position;
     }
 
+    position = Math.round(100 * position) / 100;
     result = result + rgba + " " + position + "%, ";
   });
 
@@ -17702,6 +17727,8 @@ module.exports = {
 
 var _ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
 
+var common = __webpack_require__(/*! ./common */ "./src/internal/common.js");
+
 var useRem = true;
 var defaultBaseFontSize = 16;
 var breakpointVariable = "$breakpoint";
@@ -17769,7 +17796,7 @@ module.exports = {
 
     var typeStyles = getUniqueStyles(sortedStyles);
     typeStyles.forEach(function (thisStyle) {
-      var tag = getTag(String(thisStyle.name()));
+      var tag = common.getTag(String(thisStyle.name()));
       var style = getTextStyleAsJson(thisStyle);
 
       if (tag.ramp == "m") {
@@ -17877,8 +17904,7 @@ module.exports = {
       var isParagraph = false;
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute));
-      var tag = getTag(String(style.name()));
-      var attributes = style.style().textStyle().attributes();
+      var tag = common.getTag(String(style.name()));
       var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
 
       if (tag.isTag && tag.cssSelector == "p") {
@@ -18033,7 +18059,7 @@ function getUniqueStyles(styles) {
   styles.forEach(function (style) {
     var found = false;
     uniqueStyles.forEach(function (sortedStyle) {
-      if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
+      if (common.getTag(String(style.name())).tag == common.getTag(String(sortedStyle.name())).tag) {
         found = true;
       }
     });
@@ -18077,7 +18103,7 @@ function getTextStyleAsJson(style) {
 function popPToTop(styles) {
   var hasParagraph = false;
   styles.forEach(function (style, indx) {
-    if (getTag(String(style.name)).selector == "p") {
+    if (common.getTag(String(style.name)).selector == "p") {
       array_move(styles, indx, 0);
       hasParagraph = true;
     }
@@ -18099,49 +18125,6 @@ function array_move(arr, old_index, new_index) {
 
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
   return arr;
-}
-
-;
-
-function getTag(name) {
-  var regex = /^\[(([A-Za-z])*(\d\.*[0-9]*|[\P|\p]+))(.*)\]\s(.*)/g,
-      tag = name,
-      isTag = false,
-      match = regex.exec(name),
-      ramp,
-      selector,
-      variant,
-      cssSelector,
-      tagName;
-
-  if (match) {
-    isTag = true;
-    tag = match[1].toLowerCase();
-    ramp = match[2].toLowerCase();
-    selector = match[3].toLowerCase();
-    cssSelector = match[3].toLowerCase();
-
-    if (cssSelector != "p") {
-      cssSelector = "h" + selector;
-    }
-
-    variant = match[4];
-    tagName = match[5];
-  }
-
-  return {
-    "isTag": isTag,
-    "tag": tag,
-    "ramp": ramp,
-    "selector": selector,
-    "cssSelector": cssSelector,
-    "variant": variant,
-    "name": tagName
-  };
-}
-
-function hyphenize(str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
 }
 
 function getFontAndWeight(fontName) {
@@ -18200,10 +18183,10 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var desktopTag;
     var desktopStyleName;
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
 
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
 
     if (tag.isTag && tag.variant) {
@@ -18222,13 +18205,13 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 
     _.forEach(desktopStyles, function (desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
-      desktopTag = getTag(desktopStyleName);
+      desktopTag = common.getTag(desktopStyleName);
 
       if (desktopTag.isTag && desktopTag.variant) {
         desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
       }
 
-      if (!desktopTag.isTag) desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
+      if (!desktopTag.isTag) desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
 
       if (tag.isTag && desktopTag.selector == tag.selector && !found) {
         found = true;
@@ -18267,10 +18250,10 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 
   _.forEach(exceptionDesktopStyles, function (thisStyle) {
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
 
     if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
+      tag.tag = _.kebabCase(tag.tag);
     }
 
     if (tag.isTag && tag.variant) {
@@ -18293,11 +18276,15 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 }
 
 function outputSetupVars(style, baseSize, fonts) {
-  var styleName = String(style.name),
-      tag = getTag(styleName);
-  tag.tag = hyphenize(tag.tag);
-  var pre = "$" + tag.tag,
-      output = ""; // SET UP FONT FAMILY STUFF
+  var styleName = String(style.name);
+  var tag = common.getTag(styleName);
+
+  if (!tag.isTag) {
+    tag.tag = _.kebabCase(tag.tag);
+  }
+
+  var pre = "$" + tag.tag;
+  var output = ""; // SET UP FONT FAMILY STUFF
 
   var fontType = "text-font";
 
@@ -18383,9 +18370,8 @@ function outputMixin(tag, indent, isResponsive) {
   indent = text;
 
   if (!tag.isTag) {
-    var newTag = tag.tag;
-    tag.tag = newTag;
-    tag.cssSelector = newTag;
+    tag.tag = _.kebabCase(tag.tag);
+    tag.cssSelector = tag.tag;
   }
 
   var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"];
@@ -18395,12 +18381,12 @@ function outputMixin(tag, indent, isResponsive) {
   }
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n";
-    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n";
+    output += indent + "@mixin " + tag.cssSelector + "-" + attribute + " {\n";
+    output += indent + "  " + attribute + ": $" + tag.tag + "-" + attribute + ";\n";
 
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n";
-      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n";
+      output += indent + "    " + attribute + ": $d" + tag.selector + "-" + attribute + ";\n";
       output += indent + "  }\n";
     }
 
@@ -18408,10 +18394,10 @@ function outputMixin(tag, indent, isResponsive) {
   }); // now tie it all together
 
 
-  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n";
+  output += indent + "@mixin " + tag.cssSelector + "-text-style {\n";
 
   _.forEach(attributes, function (attribute) {
-    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" + attribute + ";\n";
+    output += indent + "  @include " + tag.cssSelector + "-" + attribute + ";\n";
   });
 
   output += indent + "}\n\n";
@@ -18445,7 +18431,7 @@ module.exports = {
       }
 
       tmp = {
-        name: common.hyphenize(thisName),
+        name: _.kebabCase(thisName),
         value: getShadows(style.value())
       };
       shaddows.push(tmp);
@@ -18497,7 +18483,7 @@ function constructShadowValue(style, inset) {
   var offsetX = style.offsetX();
   var offsetY = style.offsetY();
   var blurRadius = style.blurRadius();
-  var rgba = rgbaToCSS(style.color());
+  var rgba = common.rgbaToCSS(style.color());
   result += "".concat(offsetX, "px ").concat(offsetY, "px ").concat(blurRadius, "px ").concat(rgba, ", ");
 
   if (inset == "inset") {
@@ -18505,39 +18491,6 @@ function constructShadowValue(style, inset) {
   }
 
   return result;
-}
-
-function rgbaToCSS(color, opacityMultiplier) {
-  if (!opacityMultiplier) {
-    opacityMultiplier = 1;
-  }
-
-  var rgba = color.toString().replace(/[a-z]|:/g, "");
-  var temprgba = rgba.slice(rgba.indexOf("(") + 1, rgba.indexOf(")") - 1).split(" ");
-  rgba = "rgba(";
-  temprgba.forEach(function (value, index) {
-    if (index < 3) {
-      rgba = rgba + Math.round(255 * value) + ", ";
-    } else {
-      rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
-    }
-  });
-  rgba = rgba.slice(0, -2) + ")";
-  return rgba;
-}
-
-function removeZeros(str) {
-  str = String(str);
-  var regEx1 = /[0]+$/;
-  var regEx2 = /[.]$/;
-
-  if (str.indexOf('.') > -1) {
-    str = str.replace(regEx1, ''); // Remove trailing 0's
-  }
-
-  str = str.replace(regEx2, ''); // Remove trailing decimal
-
-  return str;
 }
 
 /***/ })

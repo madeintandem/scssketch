@@ -7,9 +7,9 @@ module.exports = {
         isTag = false,
         match = regex.exec(name),
         ramp = "",
-        // selector,
+        selector,
         // variant,
-        // cssSelector,
+        cssSelector,
         tagName = name
 
     if (match) {
