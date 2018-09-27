@@ -1,4 +1,5 @@
 var _ = require("lodash")
+const common = require("./common");
 
 var useRem = true;
 var defaultBaseFontSize = 16;
@@ -42,7 +43,7 @@ module.exports = {
     var sortedStyles = _.sortBy(sharedTextStyles.objects(), [style => style.name()], ["desc"])
     var typeStyles = getUniqueStyles(sortedStyles)
     typeStyles.forEach(function(thisStyle){
-      var tag = getTag(String(thisStyle.name()))
+      var tag = common.getTag(String(thisStyle.name()))
       var style = getTextStyleAsJson(thisStyle)
       if (tag.ramp == "m") {
         mobile.push(style)
@@ -134,8 +135,7 @@ module.exports = {
       var isParagraph = false;
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute))
-      var tag = getTag(String(style.name()))
-      var attributes = style.style().textStyle().attributes();
+      var tag = common.getTag(String(style.name()))
       var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
       if (tag.isTag && tag.cssSelector == "p") {
         isParagraph = true
@@ -253,7 +253,7 @@ function getUniqueStyles(styles) {
   styles.forEach(function(style){
     var found = false;
     uniqueStyles.forEach(function(sortedStyle){
-      if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
+      if (common.getTag(String(style.name())).tag == common.getTag(String(sortedStyle.name())).tag) {
         found = true;
       }
     })
@@ -290,7 +290,7 @@ function getTextStyleAsJson (style) {
 function popPToTop (styles) {
   var hasParagraph = false;
   styles.forEach(function(style, indx){
-    if (getTag(String(style.name)).selector == "p") {
+    if (common.getTag(String(style.name)).selector == "p") {
       array_move(styles, indx, 0);
       hasParagraph = true;
     }
@@ -306,30 +306,6 @@ function array_move(arr, old_index, new_index) {
   }
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
   return arr; 
-};
-function getTag (name) {
-  var regex = /^\[(([A-Za-z])*(\d\.*[0-9]*|[\P|\p]+))(.*)\]\s(.*)/g,
-      tag = name,
-      isTag = false,
-      match = regex.exec(name),
-      ramp,
-      selector,
-      variant,
-      cssSelector,
-      tagName
-  if (match) {
-    isTag = true
-    tag = match[1].toLowerCase()
-    ramp = match[2].toLowerCase()
-    selector = match[3].toLowerCase()
-    cssSelector = match[3].toLowerCase()
-    if (cssSelector != "p") {
-      cssSelector = "h" + selector
-    }
-    variant = match[4]
-    tagName = match[5]
-  }
-  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant, "name": tagName}
 }
 function getFontAndWeight (fontName) {
   fontName = String(fontName)
@@ -383,7 +359,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var desktopTag;
     var desktopStyleName;
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
     if (!tag.isTag) {
       tag.tag = _.kebabCase(tag.tag);
     }
@@ -400,7 +376,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     var thisDesktopStyle
     _.forEach(desktopStyles, function(desktopStyle) {
       desktopStyleName = String(desktopStyle.name);
-      desktopTag = getTag(desktopStyleName);
+      desktopTag = common.getTag(desktopStyleName);
       if (desktopTag.isTag && desktopTag.variant) {
         desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
       }
@@ -440,7 +416,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
   })
   _.forEach(exceptionDesktopStyles, function(thisStyle) {
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
+    var tag = common.getTag(styleName);
     if (!tag.isTag) {
       tag.tag = _.kebabCase(tag.tag);
     }
@@ -462,11 +438,14 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 }
 
 function outputSetupVars(style, baseSize, fonts) {
-  var styleName = String(style.name),
-      tag = getTag(styleName);
-  tag.tag = _.kebabCase(tag.tag)
-  var pre = "$" + tag.tag,
-      output = "";
+  var styleName = String(style.name)
+  var tag = common.getTag(styleName)
+  if (!tag.isTag) {
+    tag.tag = _.kebabCase(tag.tag)
+  }
+  
+  var pre = "$" + tag.tag
+  var output = ""
 
   // SET UP FONT FAMILY STUFF
 
@@ -535,29 +514,28 @@ function outputMixin (tag, indent, isResponsive) {
   }
   indent = text;
   if (!tag.isTag) {
-    var newTag = tag.tag
-    tag.tag = newTag;
-    tag.cssSelector = newTag
+    tag.tag = _.kebabCase(tag.tag)
+    tag.cssSelector = tag.tag
   }
   var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   if (outputFontWeight) {
     attributes = ["font-family", "font-weight", "font-style", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   }
-  _.forEach(attributes, function(attribute){
-    output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-" + attribute + " {\n"
-    output += indent + "  " + attribute + ": $" + _.kebabCase(tag.tag) + "-" + attribute + ";\n"
+  _.forEach(attributes, function(attribute) {
+    output += indent + "@mixin " + tag.cssSelector + "-" + attribute + " {\n"
+    output += indent + "  " + attribute + ": $" + tag.tag + "-" + attribute + ";\n"
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-      output += indent + "    " + attribute + ": $d" + _.kebabCase(tag.selector) + "-" + attribute + ";\n"
+      output += indent + "    " + attribute + ": $d" + tag.selector + "-" + attribute + ";\n"
       output += indent + "  }\n"
     }
     output += indent + "}\n"
   })
   // now tie it all together
 
-  output += indent + "@mixin " + _.kebabCase(tag.cssSelector) + "-text-style {\n"
+  output += indent + "@mixin " + tag.cssSelector + "-text-style {\n"
   _.forEach(attributes, function(attribute){
-    output += indent + "  @include " + _.kebabCase(tag.cssSelector) + "-" +attribute + ";\n"
+    output += indent + "  @include " + tag.cssSelector + "-" +attribute + ";\n"
   })
   output += indent + "}\n\n"
   return output
