@@ -1,14 +1,13 @@
 module.exports = {
   
-  // TODO: refactoring
   getTag: (name) => {  
-    var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|\p+))(.*)\]\s(.*)/g,
+    var regex = /^\[(([A-Za-z])(\d\.*[0-9]*|[\p|\P]+))(.*)\]\s(.*)/g,
         tag = name,
         isTag = false,
         match = regex.exec(name),
         ramp = "",
         selector,
-        // variant,
+        variant,
         cssSelector,
         tagName = name
 
@@ -21,18 +20,17 @@ module.exports = {
       if (cssSelector != "p") {
         cssSelector = "h" + selector
       }
-      // variant = match[4]
+      variant = match[4]
       tagName = match[5]
     }
     
-    // TODO: doesn't seem like we need all these details
     return {
       "isTag": isTag, 
       "tag": tag, 
       "ramp": ramp,
       "selector": selector, 
       "cssSelector": cssSelector, 
-      // "variant": variant, 
+      "variant": variant, 
       "name": tagName
     }
   },
