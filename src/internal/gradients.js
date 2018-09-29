@@ -10,24 +10,24 @@ module.exports = {
   
   addGradients: (gradientStyles) => {
     return _.reduce(gradientStyles, (gradientsArray, style) => {
-              var theFills = style.value().fills().reverse()
-              var gradients = ""
-              _.forEach(theFills, (fill) => {
-                if(opacityExits(fill)) {
-                  gradients += setGradient(fill, style)
-                }
-              })
+      var theFills = style.value().fills().reverse()
+      var gradients = ""
+      _.forEach(theFills, (fill) => {
+        if(opacityExists(fill)) {
+          gradients += setGradient(fill, style)
+        }
+      })
 
-              gradients = gradients.slice(0, -2);
-              var thisName = String(style.name())
-              var tag = common.getTag(thisName)
-              if (tag.isTag || thisName.indexOf("]") > 0) {
-                thisName = tag.name.trim()
-              }
-              gradientsArray.push({"name": _.kebabCase(thisName), "gradient": gradients})
+      gradients = gradients.slice(0, -2);
+      var thisName = String(style.name())
+      var tag = common.getTag(thisName)
+      if (tag.isTag || thisName.indexOf("]") > 0) {
+        thisName = tag.name.trim()
+      }
+      gradientsArray.push({"name": _.kebabCase(thisName), "gradient": gradients})
 
-              return gradientsArray
-            }, [])  
+      return gradientsArray
+    }, [])  
   },
   
   writeGradients: (gradients) => {
@@ -44,7 +44,7 @@ module.exports = {
   }
 }
 
-function opacityExits(fill) {
+function opacityExists(fill) {
   return String(fill.fillType()) == "1" && 
                 fill.gradient() && 
                 fill.gradient().stops() && 

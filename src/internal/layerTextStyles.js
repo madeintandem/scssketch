@@ -237,12 +237,7 @@ function getFontAndWeight (fontName) {
       fontStyle = "oblique"
       fontWeightWord = fontWeightWord.replace("oblique", "")
     }
-
-    fontWeightWords.forEach(function(thisFontWeight){
-      if (fontWeightWord === thisFontWeight.name) {
-        fontWeight = thisFontWeight.value
-      }
-    })
+    fontWeight = _.find(fontWeightWords, (thisFontWeight) => { return (fontWeightWord === thisFontWeight.name)}).value
   }
   var returnFontName = String(fontName).replace(/([A-Z])/g, ' $1').trim()
   return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight, "fontStyle": fontStyle}
@@ -268,8 +263,6 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
       }
 
   _.forEach(mobileStyles, (thisStyle) => {
-    var desktopTag;
-    var desktopStyleName;
     var styleName = String(thisStyle.name);
     var tag = common.getTag(styleName);
     if (tag.isTag) {
@@ -277,32 +270,21 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     }
     output += "// " + styleName + "\n";
 
+
     // find a counterpart desktop style
     var found = false;
-    var thisDesktopStyle
-    _.forEach(desktopStyles, function(desktopStyle) {
-      desktopStyleName = String(desktopStyle.name);
-      desktopTag = common.getTag(desktopStyleName);
-      if (desktopTag.isTag) {
-        desktopStyleName = desktopTag.cssSelector.toUpperCase() + " " + desktopTag.name
-      }
+    var thisDesktopStyle = _.find(desktopStyles, (desktopStyle) => {return common.getTag(String(desktopStyle.name)).selector == tag.selector})
+    
+    if (thisDesktopStyle) {
+      exceptionDesktopStyles = _.pull(exceptionDesktopStyles, thisDesktopStyle)
+      var desktopTag = common.getTag(String(thisDesktopStyle.name));
       if (!desktopTag.isTag) {
         desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
       }
-      if (tag.isTag && desktopTag.selector === tag.selector && !found) {
-        found = true;
-        thisDesktopStyle = desktopStyle
-        var index = exceptionDesktopStyles.indexOf(thisDesktopStyle);
-        if (index > -1) {
-          exceptionDesktopStyles.splice(index, 1);
-        }
-      }
-    })
 
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+      output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
 
-    // if desktop, set desktop vars
-    if (thisDesktopStyle) {
+      // if desktop, set desktop vars
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts)
       isResponsive = true
     }
