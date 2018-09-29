@@ -51,7 +51,6 @@ module.exports = {
     })
     return rgba.slice(0, -2) + ")"
   }
-
 }
 
 function removeZeros(str){

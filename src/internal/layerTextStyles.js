@@ -1,3 +1,5 @@
+//TODO: refactor this is it's own branch. This file needs to be merged separately. 
+// call the branch: refactor-layer-text-styles
 var _ = require("lodash")
 const common = require("./common");
 
@@ -9,7 +11,7 @@ var desktopBaseFontSize = defaultBaseFontSize;
 var outputFontWeight = true;
 
 module.exports = {
-  parse: function (sharedTextStyles) { 
+  parse: (sharedTextStyles) => { 
     var desktop = []
     var mobile = []
     var assorted = []
@@ -30,7 +32,7 @@ module.exports = {
   },
 
   // TODO Refactor this
-  writeSass: function (layerTextStyleMap, fonts) {
+  writeSass: (layerTextStyleMap, fonts) => {
     var textStyleSheet = ""
 
     if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || 
@@ -106,7 +108,7 @@ module.exports = {
     return textStyleSheet
   },
 
-  fontSurvey: function (styles) {
+  fontSurvey: (styles) => {
     var fonts = []
     var uniqueStyles = getUniqueStyles(styles.objects())
     _.forEach(uniqueStyles, (style) => {
@@ -141,7 +143,7 @@ module.exports = {
     return fonts
   },
 
-  determineFontType: function (foundFonts) {
+  determineFontType: (foundFonts) => {
     var fontList = [],
         textFont,
         displayFont,
@@ -207,7 +209,7 @@ function getUniqueStyles(styles) {
   })
 }
 
-function getTextStyleAsJson (style) {
+function getTextStyleAsJson(style) {
   var attributes = style.style().textStyle().attributes();
   var par = attributes.NSParagraphStyle;
   if (par != null) {
@@ -232,13 +234,13 @@ function getTextStyleAsJson (style) {
   return style;
 }
 
-function popPToTop (styles) {
+function popPToTop(styles) {
   styles = _.sortBy(styles, (style) => {return common.getTag(String(style.name)).selector === 'p' ? 0 : 1;})
   var hasParagraph = _.find(styles, (style) => {return common.getTag(String(style.name)).selector === 'p'});
   return {"styles": styles, "hasParagraph": hasParagraph}
 }
 
-function getFontAndWeight (fontName) {
+function getFontAndWeight(fontName) {
 
   var fontWeightWords = [
       {"name": "thin", "value": 100},
@@ -427,7 +429,7 @@ function outputSetupVars(style, baseSize, fonts) {
   return output
 }
 
-function outputMixin (tag, indent, isResponsive) {
+function outputMixin(tag, indent, isResponsive) {
   var text = "",
       output = ""
   var i;

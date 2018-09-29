@@ -20,14 +20,12 @@ module.exports = {
   },
   
   writeColors: (colors) => {
-    var styles = ""
-    if (colors.length > 0) {
-      styles += "// COLORS\n"
-      _.forEach(colors, (color) => {
-        styles += `$${color.name}: ${color.value};\n`
-      })
-      styles += "\n"
-    }
-    return styles
+    if(colors.length == 0) return ""
+    
+    var styles = _.reduce(colors, (styles, color) => {
+      return styles + `$${color.name}: ${color.value};\n`
+    }, "// COLORS\n")
+
+    return styles += "\n"
   }   
 }

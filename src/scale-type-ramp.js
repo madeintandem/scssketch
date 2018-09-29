@@ -1,3 +1,5 @@
+//TODO: refactor this file separately
+//call the branch: refactor-scale-type-ramp
 var _ = require("lodash")
   // Here are some options that I'm hard-coding for now
 const numberOfTextStyles = 5; // This does not include paragraph styles
@@ -6,7 +8,7 @@ var sharedStyles
 var doc
 var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
 
-export default function(context) {
+export default (context) => {
   doc = context.api().selectedDocument
   sharedStyles = doc.sketchObject.documentData().layerTextStyles()
 
@@ -24,7 +26,7 @@ export default function(context) {
 }
 
 // Let's build a dialog box for inputs
-function createWindow () {
+function createWindow() {
   var alert = COSAlertWindow.new();
   alert.setMessageText("Set Type Ramp")
 
@@ -186,7 +188,7 @@ function findAndGetType(options) {
 
 // THIS IS THE MEAT OF THIS THING
 // ---------------------------------------------------------------------------
-function calculateType (options) {
+function calculateType(options) {
   // Get the three values from the DOM
   var baseFontSize = parseInt(options.baseFontSize);
   var lineHeightFactor = parseFloat(options.lineHeightFactor);
@@ -289,23 +291,23 @@ function findLayersMatchingPredicate_inContainer_filterByType(predicate, contain
 }
 
 function findLayersWithSharedStyleNamed_inContainer(styleName, newStyle, container) {
-    // Get sharedObjectID of shared style with specified name
-    var styleSearchPredicate = NSPredicate.predicateWithFormat("name == %@", styleName)
-    var filteredStyles = sharedStyles.objects().filteredArrayUsingPredicate(styleSearchPredicate)
+  // Get sharedObjectID of shared style with specified name
+  var styleSearchPredicate = NSPredicate.predicateWithFormat("name == %@", styleName)
+  var filteredStyles = sharedStyles.objects().filteredArrayUsingPredicate(styleSearchPredicate)
 
-    var filteredLayers = NSArray.array()
-    var loopStyles = filteredStyles.objectEnumerator(), style, predicate;
+  var filteredLayers = NSArray.array()
+  var loopStyles = filteredStyles.objectEnumerator(), style, predicate;
 
-    while (style = loopStyles.nextObject()) {
-      predicate = NSPredicate.predicateWithFormat("style.sharedObjectID == %@", style.objectID())
-      filteredLayers = filteredLayers.arrayByAddingObjectsFromArray(findLayersMatchingPredicate_inContainer_filterByType(predicate, container))
-    }
+  while (style = loopStyles.nextObject()) {
+    predicate = NSPredicate.predicateWithFormat("style.sharedObjectID == %@", style.objectID())
+    filteredLayers = filteredLayers.arrayByAddingObjectsFromArray(findLayersMatchingPredicate_inContainer_filterByType(predicate, container))
+  }
 
-    for (var i = 0; i < filteredLayers.length; i++) {
-      filteredLayers[i].style = newStyle;
-    }
+  for (var i = 0; i < filteredLayers.length; i++) {
+    filteredLayers[i].style = newStyle;
+  }
 
-    return filteredLayers
+  return filteredLayers
 }
 
 function checkForMatchingStyles(existingTextObjects, newStyleName, newStyle) {
@@ -329,7 +331,7 @@ function checkForMatchingStyles(existingTextObjects, newStyleName, newStyle) {
   }
 }
 
-function getTextStyleAsJson (style, changes) {
+function getTextStyleAsJson(style, changes) {
   var definedTextStyle = {};
   definedTextStyle.attributes = style.style().textStyle().attributes();
 
@@ -389,7 +391,7 @@ function getTextStyleAsJson (style, changes) {
   return style;
 }
 
-function setTypeStyle (style) {
+function setTypeStyle(style) {
   var size = style.size;
   var family = style.font;
   var name = style.name;
@@ -464,52 +466,54 @@ function updateTypeStyles(styleMap, ramp) {
   })
 }
 
-function checkForTextStyleSymbol (symbol) {
-    var result = false
-    var symbolName = String(symbol.name());
-    if (symbolName.startsWith("Text Style / All / [") && symbolName.indexOf("]") > 0) {
-        result = true;
-    }
-    return result
+function checkForTextStyleSymbol(symbol) {
+  var result = false
+  var symbolName = String(symbol.name());
+  if (symbolName.startsWith("Text Style / All / [") && symbolName.indexOf("]") > 0) {
+      result = true;
+  }
+  return result
 }
+
 function centerVertically(layer, parentHeight) {
-    var layerWidth = parseFloat(layer.frame().width()) * 1;
-    var layerHeight = parseFloat(layer.frame().height()) * 1;
-    var layerXPos = parseFloat(layer.frame().x()) * 1;
-    var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
-    layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight));
+  var layerWidth = parseFloat(layer.frame().width()) * 1;
+  var layerHeight = parseFloat(layer.frame().height()) * 1;
+  var layerXPos = parseFloat(layer.frame().x()) * 1;
+  var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
+  layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight));
 }
-function alignText (pages) {
-    var symbolsPage;
-    pages.forEach(function(page){
-        if (page.name() == "Symbols") {
-            symbolsPage = page;
-        }
-    })
-    if (symbolsPage) {
-        var symbolsPageLayers = symbolsPage.layers();
-        symbolsPageLayers.forEach(function(symbol, index) {
-            if (checkForTextStyleSymbol(symbol)) {
-                var symbolHeight = String(symbol.frame().height()) * 1;
-                symbol.layers().forEach(function(layer){
-                    if(String(layer.class()) == "MSTextLayer") {
-                        centerVertically(layer, symbolHeight)
-                    }
-                })
-                if (String(symbol.name()).toLowerCase().endsWith("centered")) {
-                    symbol.layers().forEach(function(layer){
-                        if(String(layer.class()) == "MSTextLayer") {
-                            layer.textAlignment = 2;
-                        }
-                    })
-                } else if (String(symbol.name()).toLowerCase().endsWith("right")) {
-                    symbol.layers().forEach(function(layer){
-                        if(String(layer.class()) == "MSTextLayer") {
-                            layer.textAlignment = 1;
-                        }
-                    })
-                }
-            }
+
+function alignText(pages) {
+  var symbolsPage;
+  pages.forEach(function(page){
+      if (page.name() == "Symbols") {
+          symbolsPage = page;
+      }
+  })
+  if (symbolsPage) {
+    var symbolsPageLayers = symbolsPage.layers();
+    symbolsPageLayers.forEach(function(symbol, index) {
+      if (checkForTextStyleSymbol(symbol)) {
+        var symbolHeight = String(symbol.frame().height()) * 1;
+        symbol.layers().forEach(function(layer){
+          if(String(layer.class()) == "MSTextLayer") {
+            centerVertically(layer, symbolHeight)
+          }
         })
-    }
+        if (String(symbol.name()).toLowerCase().endsWith("centered")) {
+          symbol.layers().forEach(function(layer){
+            if(String(layer.class()) == "MSTextLayer") {
+              layer.textAlignment = 2;
+            }
+          })
+        } else if (String(symbol.name()).toLowerCase().endsWith("right")) {
+          symbol.layers().forEach(function(layer){
+            if(String(layer.class()) == "MSTextLayer") {
+                layer.textAlignment = 1;
+            }
+          })
+        }
+      }
+    })
+  }
 }

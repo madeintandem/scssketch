@@ -7,7 +7,7 @@ export default function(context) {
   alignText(pages)
 }
 
-function alignText (pages) {
+function alignText(pages) {
   var symbolsPage = _.find(pages, (page) => {return String(page.name()) === "Symbols"});
   if (symbolsPage) {
     var symbolsPageLayers = symbolsPage.layers();
