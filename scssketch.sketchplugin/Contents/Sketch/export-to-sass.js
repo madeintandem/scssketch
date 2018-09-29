@@ -91,70 +91,6 @@ var exports =
 /************************************************************************/
 /******/ ({
 
-/***/ "./node_modules/@skpm/builder/node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-
-/***/ "./node_modules/@skpm/builder/node_modules/webpack/buildin/module.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/module.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = function(module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function() {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
-
-
-/***/ }),
-
 /***/ "./node_modules/lodash/lodash.js":
 /*!***************************************!*\
   !*** ./node_modules/lodash/lodash.js ***!
@@ -17260,7 +17196,71 @@ module.exports = function(module) {
   else {}
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../@skpm/builder/node_modules/webpack/buildin/global.js */ "./node_modules/@skpm/builder/node_modules/webpack/buildin/global.js"), __webpack_require__(/*! ./../@skpm/builder/node_modules/webpack/buildin/module.js */ "./node_modules/@skpm/builder/node_modules/webpack/buildin/module.js")(module)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js"), __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/module.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/module.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function() {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
 
 /***/ }),
 
@@ -17459,7 +17459,7 @@ module.exports = {
       var gradients = "";
 
       _.forEach(theFills, function (fill) {
-        if (opacityExits(fill)) {
+        if (opacityExists(fill)) {
           gradients += setGradient(fill, style);
         }
       });
@@ -17496,7 +17496,7 @@ module.exports = {
   }
 };
 
-function opacityExits(fill) {
+function opacityExists(fill) {
   return String(fill.fillType()) == "1" && fill.gradient() && fill.gradient().stops() && fill.gradient().stops().length && parseFloat(fill.contextSettings().opacity()) > 0;
 }
 
@@ -17737,18 +17737,56 @@ module.exports = {
     var textStyleSheet = "";
 
     if (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length || layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length || layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length) {
-      textStyleSheet += "// FONT FAMILIES\n"; // TODO Reuse variables for fonts that are already declared?
+      textStyleSheet += "// FONT FAMILIES\n";
 
-      _.forEach(fonts, function (font) {
+      if (fonts.textFont) {
         if (outputFontWeight) {
-          fontAndWeight = getFontAndWeight(font.fontObject.font);
-          textStyleSheet += "$" + font.name + ": " + fontAndWeight.fontFamily + ";\n";
-          textStyleSheet += "$" + font.name + "-weight: " + fontAndWeight.fontWeight + ";\n";
-          textStyleSheet += "$" + font.name + "-style: " + fontAndWeight.fontStyle + ";\n";
+          theTextFont = getFontAndWeight(fonts.textFont.font);
+          textStyleSheet += "$text-font: " + theTextFont.fontFamily + ";\n";
+          textStyleSheet += "$text-font-weight: " + theTextFont.fontWeight + ";\n";
+          textStyleSheet += "$text-font-style: " + theTextFont.fontStyle + ";\n";
         } else {
-          textStyleSheet += "$" + font.name + ": " + font.fontObject.font + ";\n";
+          textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n";
         }
-      }); // - mobile and desktop sizes [HAPPY PATH]
+      }
+
+      if (fonts.displayFont) {
+        if (outputFontWeight) {
+          theDisplayFont = getFontAndWeight(fonts.displayFont.font);
+          var fontFamilyValue = theDisplayFont.fontFamily;
+
+          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+            fontFamilyValue = "$text-font";
+          }
+
+          textStyleSheet += "$display-font: " + fontFamilyValue + ";\n";
+          textStyleSheet += "$display-font-weight: " + theDisplayFont.fontWeight + ";\n";
+          textStyleSheet += "$display-font-style: " + theDisplayFont.fontStyle + ";\n";
+        } else {
+          textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n";
+        }
+      }
+
+      if (fonts.auxiliaryFont && fonts.auxiliaryFont.length > 0) {
+        _.forEach(fonts.auxiliaryFont, function (font) {
+          if (outputFontWeight) {
+            theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
+            var fontFamilyValue = theAuxiliaryFont.fontFamily;
+
+            if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+              fontFamilyValue = "$text-font";
+            } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
+              fontFamilyValue == "$display-font";
+            }
+
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n";
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-weight: " + theAuxiliaryFont.fontWeight + ";\n";
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-style: " + theAuxiliaryFont.fontStyle + ";\n";
+          } else {
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n";
+          }
+        });
+      } // - mobile and desktop sizes [HAPPY PATH]
 
 
       if (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0 && layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0) {
@@ -18014,9 +18052,10 @@ function getFontAndWeight(fontName) {
   }, {
     "name": "heavy",
     "value": 900
-  }];
-  fontName = String(fontName);
-  fontWeight = 400, fontStyle = "normal";
+  }],
+      fontName = String(fontName),
+      fontWeightFound,
+      fontStyle = "normal";
 
   if (fontName.indexOf("-")) {
     var fontWeightWord = fontName.split("-");
@@ -18031,17 +18070,15 @@ function getFontAndWeight(fontName) {
       fontWeightWord = fontWeightWord.replace("oblique", "");
     }
 
-    fontWeightWords.forEach(function (thisFontWeight) {
-      if (fontWeightWord === thisFontWeight.name) {
-        fontWeight = thisFontWeight.value;
-      }
+    fontWeightFound = _.find(fontWeightWords, function (thisFontWeight) {
+      return fontWeightWord === thisFontWeight.name;
     });
   }
 
   var returnFontName = String(fontName).replace(/([A-Z])/g, ' $1').trim();
   return {
     "fontFamily": '"' + returnFontName + '"',
-    "fontWeight": fontWeight,
+    "fontWeight": fontWeightFound ? fontWeightFound.value : 400,
     "fontStyle": fontStyle
   };
 }
@@ -18065,8 +18102,6 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
   }
 
   _.forEach(mobileStyles, function (thisStyle) {
-    var desktopTag;
-    var desktopStyleName;
     var styleName = String(thisStyle.name);
     var tag = common.getTag(styleName);
 
@@ -18077,34 +18112,21 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     output += "// " + styleName + "\n"; // find a counterpart desktop style
 
     var found = false;
-    var thisDesktopStyle;
 
-    _.forEach(desktopStyles, function (desktopStyle) {
-      desktopStyleName = String(desktopStyle.name);
-      desktopTag = common.getTag(desktopStyleName);
+    var thisDesktopStyle = _.find(desktopStyles, function (desktopStyle) {
+      return common.getTag(String(desktopStyle.name)).selector == tag.selector;
+    });
 
-      if (desktopTag.isTag) {
-        desktopStyleName = desktopTag.cssSelector.toUpperCase() + " " + desktopTag.name;
-      }
+    if (thisDesktopStyle) {
+      exceptionDesktopStyles = _.pull(exceptionDesktopStyles, thisDesktopStyle);
+      var desktopTag = common.getTag(String(thisDesktopStyle.name));
 
       if (!desktopTag.isTag) {
         desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
       }
 
-      if (tag.isTag && desktopTag.selector === tag.selector && !found) {
-        found = true;
-        thisDesktopStyle = desktopStyle;
-        var index = exceptionDesktopStyles.indexOf(thisDesktopStyle);
+      output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts); // if desktop, set desktop vars
 
-        if (index > -1) {
-          exceptionDesktopStyles.splice(index, 1);
-        }
-      }
-    });
-
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts); // if desktop, set desktop vars
-
-    if (thisDesktopStyle) {
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts);
       isResponsive = true;
     } // give me those sweet sweet mixins
@@ -18140,9 +18162,17 @@ function outputSetupVars(style, baseSize, fonts) {
   var pre = "$" + tag.tag;
   var output = ""; // SET UP FONT FAMILY STUFF
 
-  var fontType = _.find(fonts, function (oneFont) {
-    return oneFont.fontObject.font == String(style.font);
-  });
+  var fontType = "text-font";
+
+  if (fonts.displayFont && fonts.displayFont.font == thisStyle.font) {
+    fontType = "display-font";
+  } else {
+    _.forEach(fonts.auxiliaryFont, function (font) {
+      if (thisStyle.font == font.fontObject.font) {
+        fontType = "auxiliary-font-" + String(font.index + 1);
+      }
+    });
+  }
 
   output += pre + "-font-family: $" + fontType.name + ", $" + fontType.name + "-fallback-fonts;\n";
 

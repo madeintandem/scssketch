@@ -27,25 +27,62 @@ module.exports = {
     })
     return {"desktop": popPToTop(desktop), "mobile": popPToTop(mobile), "assorted": {"styles": assorted}};
   },
+
   // TODO Refactor this
   writeSass: function (layerTextStyleMap, fonts) {
     var textStyleSheet = ""
 
-    if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length) || (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length)) {
+    if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || 
+        (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length) || 
+        (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length)) {
+      
       textStyleSheet += "// FONT FAMILIES\n"
-      // TODO Reuse variables for fonts that are already declared?
-      _.forEach(fonts, (font) => {
+      
+      if (fonts.textFont) {
         if (outputFontWeight) {
-          fontAndWeight = getFontAndWeight(font.fontObject.font);
-          textStyleSheet += "$" + font.name + ": " + fontAndWeight.fontFamily + ";\n"
-          textStyleSheet += "$" + font.name + "-weight: " + fontAndWeight.fontWeight + ";\n"
-          textStyleSheet += "$" + font.name + "-style: " + fontAndWeight.fontStyle + ";\n"
+          theTextFont = getFontAndWeight(fonts.textFont.font);
+          textStyleSheet += "$text-font: " + theTextFont.fontFamily + ";\n"
+          textStyleSheet += "$text-font-weight: " + theTextFont.fontWeight + ";\n"
+          textStyleSheet += "$text-font-style: " + theTextFont.fontStyle + ";\n"
+        } else {
+          textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
         }
-        else {
-          textStyleSheet += "$" + font.name + ": " + font.fontObject.font + ";\n"
-        }
-      })
+      }
 
+      if(fonts.displayFont) {
+        if (outputFontWeight) {
+          theDisplayFont = getFontAndWeight(fonts.displayFont.font);
+          var fontFamilyValue = theDisplayFont.fontFamily;
+          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+            fontFamilyValue = "$text-font"
+          }
+          textStyleSheet += "$display-font: " + fontFamilyValue + ";\n"
+          textStyleSheet += "$display-font-weight: " + theDisplayFont.fontWeight + ";\n"
+          textStyleSheet += "$display-font-style: " + theDisplayFont.fontStyle + ";\n"
+        } else {
+          textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
+        }
+      }
+      
+      if (fonts.auxiliaryFont && fonts.auxiliaryFont.length > 0) {
+        _.forEach(fonts.auxiliaryFont, function(font){
+          if (outputFontWeight) {
+            theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
+            var fontFamilyValue = theAuxiliaryFont.fontFamily;
+            if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
+              fontFamilyValue = "$text-font"
+            } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
+              fontFamilyValue == "$display-font"
+            }
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n"
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-weight: " + theAuxiliaryFont.fontWeight + ";\n"
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-style: " + theAuxiliaryFont.fontStyle + ";\n"
+          } else {
+            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n"
+          }
+        })
+      }
+      
       // - mobile and desktop sizes [HAPPY PATH]
       if ((layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) && (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0)) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile, layerTextStyleMap.desktop)
@@ -67,6 +104,7 @@ module.exports = {
     }
     return textStyleSheet
   },
+
   fontSurvey: function (styles) {
     var fonts = []
     var uniqueStyles = getUniqueStyles(styles.objects())
@@ -101,6 +139,7 @@ module.exports = {
     })
     return fonts
   },
+
   determineFontType: function (foundFonts) {
     var fontList = [],
         textFont,
@@ -138,6 +177,7 @@ module.exports = {
     return result
   }
 }
+
 function setBaseFontSize (mobileRamp, desktopRamp) {
   var output = "";
   if (useRem) {
@@ -159,11 +199,13 @@ function setBaseFontSize (mobileRamp, desktopRamp) {
   }
   return output
 }
+
 function getUniqueStyles(styles) {
   return _.uniqBy(styles, (style) => {
     return common.getTag(String(style.name())).tag
-  });
+  })
 }
+
 function getTextStyleAsJson (style) {
   var attributes = style.style().textStyle().attributes();
   var par = attributes.NSParagraphStyle;
@@ -188,11 +230,13 @@ function getTextStyleAsJson (style) {
   };
   return style;
 }
+
 function popPToTop (styles) {
   styles = _.sortBy(styles, (style) => {return common.getTag(String(style.name)).selector === 'p' ? 0 : 1;})
   var hasParagraph = _.find(styles, (style) => {return common.getTag(String(style.name)).selector === 'p'});
   return {"styles": styles, "hasParagraph": hasParagraph}
 }
+
 function getFontAndWeight (fontName) {
 
   var fontWeightWords = [
@@ -220,9 +264,9 @@ function getFontAndWeight (fontName) {
 
       {"name": "black", "value": 900},
       {"name": "heavy", "value": 900}
-    ]
-  fontName = String(fontName)
-      fontWeight = 400,
+    ],
+  fontName = String(fontName),
+      fontWeightFound,
       fontStyle = "normal"
   if (fontName.indexOf("-")) {
     var fontWeightWord = fontName.split("-");
@@ -237,10 +281,17 @@ function getFontAndWeight (fontName) {
       fontStyle = "oblique"
       fontWeightWord = fontWeightWord.replace("oblique", "")
     }
-    fontWeight = _.find(fontWeightWords, (thisFontWeight) => { return (fontWeightWord === thisFontWeight.name)}).value
+    
+    fontWeightFound = _.find(fontWeightWords, (thisFontWeight) => { 
+      return (fontWeightWord === thisFontWeight.name)
+    })
   }
+
   var returnFontName = String(fontName).replace(/([A-Z])/g, ' $1').trim()
-  return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight, "fontStyle": fontStyle}
+  return {
+    "fontFamily": '"' + returnFontName + '"', 
+    "fontWeight": fontWeightFound ? fontWeightFound.value : 400, 
+    "fontStyle": fontStyle}
 }
 
 function compareNameLength(a,b) {
@@ -250,6 +301,7 @@ function compareNameLength(a,b) {
     return 1;
   return 0;
 }
+
 // TODO Needs refactoring
 function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
   var output = "",
@@ -316,7 +368,17 @@ function outputSetupVars(style, baseSize, fonts) {
   var output = ""
 
   // SET UP FONT FAMILY STUFF
-  var fontType = _.find(fonts, (oneFont) => { return oneFont.fontObject.font == String(style.font)})
+  var fontType = "text-font"	
+  if (fonts.displayFont && fonts.displayFont.font == thisStyle.font) {
+    fontType = "display-font"
+  } else {
+    _.forEach(fonts.auxiliaryFont, function(font){
+      if (thisStyle.font == font.fontObject.font) {
+        fontType = "auxiliary-font-" + String(font.index + 1)
+      }
+    })
+  }
+
   output += pre + "-font-family: $" + fontType.name + ", $" + fontType.name + "-fallback-fonts;\n"
   if (outputFontWeight) {
     output += pre + "-font-weight: $" + fontType.name + "-weight;\n"
