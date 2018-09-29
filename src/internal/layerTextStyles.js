@@ -1,4 +1,5 @@
 var _ = require("lodash")
+const common = require("./common");
 
 var useRem = true;
 var defaultBaseFontSize = 16;
@@ -7,104 +8,44 @@ var mobileBaseFontSize = defaultBaseFontSize;
 var desktopBaseFontSize = defaultBaseFontSize;
 var outputFontWeight = true;
 
-var fontWeightWords = [
-    {"name": "thin", "value": 100},
-    {"name": "hairline", "value": 100},
-
-    {"name": "extralight", "value": 200},
-    {"name": "ultralight", "value": 200},
-
-    {"name": "light", "value": 300},
-
-    {"name": "normal", "value": 400},
-    {"name": "regular", "value": 400},
-    {"name": "", "value": 400},
-
-    {"name": "medium", "value": 500},
-
-    {"name": "semibold", "value": 600},
-    {"name": "demibold", "value": 600},
-
-    {"name": "bold", "value": 700},
-
-    {"name": "extrabold", "value": 800},
-    {"name": "ultrabold", "value": 800},
-
-    {"name": "black", "value": 900},
-    {"name": "heavy", "value": 900}
-  ]
-
 module.exports = {
   parse: function (sharedTextStyles) { 
     var desktop = []
     var mobile = []
     var assorted = []
     var sortedStyles = _.sortBy(sharedTextStyles.objects(), [style => style.name()], ["desc"])
-    var typeStyles = getUniqueStyles(sortedStyles)
-    typeStyles.forEach(function(thisStyle){
-      var tag = getTag(String(thisStyle.name()))
+    _.forEach(getUniqueStyles(sortedStyles), (thisStyle) => {
+      var tag = common.getTag(String(thisStyle.name()))
       var style = getTextStyleAsJson(thisStyle)
-      if (tag.ramp == "m") {
+      if (tag.ramp === "m") {
         mobile.push(style)
-      } else if (tag.ramp == "d") {
+      } else if (tag.ramp === "d") {
         desktop.push(style)
-      } else if (tag.ramp == "x") {
-        // do nothing
-      } else {
+      } else if (tag.ramp != "x") {
         assorted.push(style)
       }
     })
     return {"desktop": popPToTop(desktop), "mobile": popPToTop(mobile), "assorted": {"styles": assorted}};
   },
+  // TODO Refactor this
   writeSass: function (layerTextStyleMap, fonts) {
-    var textStyleSheet = "",
-      theTextFont,
-      theDisplayFont,
-      theAuxiliaryFont
+    var textStyleSheet = ""
+
     if ((layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length) || (layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length) || (layerTextStyleMap.assorted.styles && layerTextStyleMap.assorted.styles.length)) {
       textStyleSheet += "// FONT FAMILIES\n"
-      if (fonts.textFont) {
+      // TODO Reuse variables for fonts that are already declared?
+      _.forEach(fonts, (font) => {
         if (outputFontWeight) {
-          theTextFont = getFontAndWeight(fonts.textFont.font);
-          textStyleSheet += "$text-font: " + theTextFont.fontFamily + ";\n"
-          textStyleSheet += "$text-font-weight: " + theTextFont.fontWeight + ";\n"
-          textStyleSheet += "$text-font-style: " + theTextFont.fontStyle + ";\n"
-        } else {
-          textStyleSheet += "$text-font: " + fonts.textFont.font + ";\n"
+          fontAndWeight = getFontAndWeight(font.fontObject.font);
+          textStyleSheet += "$" + font.name + ": " + fontAndWeight.fontFamily + ";\n"
+          textStyleSheet += "$" + font.name + "-weight: " + fontAndWeight.fontWeight + ";\n"
+          textStyleSheet += "$" + font.name + "-style: " + fontAndWeight.fontStyle + ";\n"
         }
-      }
-      if (fonts.displayFont) {
-        if (outputFontWeight) {
-          theDisplayFont = getFontAndWeight(fonts.displayFont.font);
-          var fontFamilyValue = theDisplayFont.fontFamily;
-          if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
-            fontFamilyValue = "$text-font"
-          }
-          textStyleSheet += "$display-font: " + fontFamilyValue + ";\n"
-          textStyleSheet += "$display-font-weight: " + theDisplayFont.fontWeight + ";\n"
-          textStyleSheet += "$display-font-style: " + theDisplayFont.fontStyle + ";\n"
-        } else {
-          textStyleSheet += "$display-font: " + fonts.displayFont.font + ";\n"
+        else {
+          textStyleSheet += "$" + font.name + ": " + font.fontObject.font + ";\n"
         }
-      }
-      if (fonts.auxiliaryFont && fonts.auxiliaryFont.length > 0) {
-        _.forEach(fonts.auxiliaryFont, function(font){
-          if (outputFontWeight) {
-            theAuxiliaryFont = getFontAndWeight(font.fontObject.font);
-            var fontFamilyValue = theAuxiliaryFont.fontFamily;
-            if (theTextFont && fontFamilyValue == theTextFont.fontFamily) {
-              fontFamilyValue = "$text-font"
-            } else if (theDisplayFont && fontFamilyValue == theDisplayFont.fontFamily) {
-              fontFamilyValue == "$display-font"
-            }
-            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + fontFamilyValue + ";\n"
-            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-weight: " + theAuxiliaryFont.fontWeight + ";\n"
-            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + "-style: " + theAuxiliaryFont.fontStyle + ";\n"
-          } else {
-            textStyleSheet += "$auxiliary-font-" + (font.index + 1) + ": " + font.fontObject.font + ";\n"
-          }
-        })
-      }
+      })
+
       // - mobile and desktop sizes [HAPPY PATH]
       if ((layerTextStyleMap.mobile.styles && layerTextStyleMap.mobile.styles.length > 0) && (layerTextStyleMap.desktop.styles && layerTextStyleMap.desktop.styles.length > 0)) {
         textStyleSheet += setBaseFontSize(layerTextStyleMap.mobile, layerTextStyleMap.desktop)
@@ -129,20 +70,20 @@ module.exports = {
   fontSurvey: function (styles) {
     var fonts = []
     var uniqueStyles = getUniqueStyles(styles.objects())
-    _.forEach(uniqueStyles, function(style) {
+    _.forEach(uniqueStyles, (style) => {
       var found = false;
       var isParagraph = false;
+      var fontCount = 0
       var attributes = style.style().textStyle().attributes();
       var fontName = String(attributes.NSFont.fontDescriptor().objectForKey(NSFontNameAttribute))
-      var tag = getTag(String(style.name()))
-      var attributes = style.style().textStyle().attributes();
+      var tag = common.getTag(String(style.name()))
       var smallestSize = parseFloat(attributes.NSFont.fontDescriptor().objectForKey(NSFontSizeAttribute));
-      if (tag.isTag && tag.cssSelector == "p") {
+      
+      if (tag.isTag && tag.cssSelector === "p") {
         isParagraph = true
       }
-      var fontCount = 0
-      _.forEach(fonts, function(foundFont){
-        if (foundFont.font == fontName) {
+      _.forEach(fonts, (foundFont) => {
+        if (foundFont.font === fontName) {
           foundFont.count += 1;
           if (!foundFont.isParagraph) {
             foundFont.isParagraph = isParagraph
@@ -150,7 +91,6 @@ module.exports = {
           if (smallestSize < foundFont.smallestSize) {
             foundFont.smallestSize = smallestSize;
           }
-          var fontCount = foundFont.count
           found = true;
         }
       })
@@ -162,57 +102,39 @@ module.exports = {
     return fonts
   },
   determineFontType: function (foundFonts) {
-    var displayFont,
+    var fontList = [],
         textFont,
+        displayFont,
         auxiliaryFont = [],
-        subArray = foundFonts.slice(),
-        most = mostUsed(subArray)
-    if (foundFonts.length == 1) {
-      textFont = foundFonts[0]
-    } else if (foundFonts.length == 2) {
-      var smaller,
-        smallestFont;
-      _.forEach(foundFonts, function(font){
-        if (!smallestFont) {
-          smallestFont = font;
-        } else if (font.smallestSize < smallestFont.smallestSize) {
-          smallestFont = font;
-        }
-      })
-      _.forEach(foundFonts, function(font) {
-        if (!smaller) {
-          smaller = font
-        } else if (font.isParagraph) {
-          smaller = font
-        } else {
-          smaller = smallestFont
-        }
-      });
-      var index = subArray.indexOf(smaller);
-      if (index > -1) {
-        subArray.splice(index, 1);
+        subArray = foundFonts.slice()
+
+    if (foundFonts.length === 1) {
+      textFont = {"name": "text-font", "fontObject": foundFonts[0]}
+
+    } else if (foundFonts.length === 2) {
+      if (_.find(foundFonts, (font) => {return font.isParagraph})) {
+        textFont = {"name": "text-font", "fontObject": _.find(foundFonts, (font) => {return font.isParagraph})}
+      } else {
+        textFont = {"name": "text-font", "fontObject": _.min(foundFonts, (font) => {return font.smallestSize})};
       }
-      textFont = smaller;
-      displayFont = subArray[0];
+      displayFont = _.pull(subArray, textFont.fontObject);
+      displayFont = {"name": "display-font", "fontObject": displayFont[0]};
     } else {
-      _.forEach(foundFonts, function(font){
-        if ((!textFont && font.isParagraph) || font.font == textFont) {
-          textFont = font
-          var index = subArray.indexOf(font);
-          if (index > -1) {
-            subArray.splice(index, 1);
-          }
-        }
-      })
+      // there are more than two fonts
+      var paragraphFont = _.find(foundFonts, (obj) => { return obj.isParagraph})
+      if (paragraphFont) {
+        textFont = {"name": "text-font", "fontObject": paragraphFont}
+        subArray = _.pull(subArray, paragraphFont);
+      }
       _.forEach(subArray, function(font){
-        if ((!displayFont && font == most) || font == displayFont) {
-          displayFont = font;
+        if ((!displayFont && font === _.max(foundFonts, (font) => {return font.count})) || font === displayFont) {
+          displayFont = {"name": "display-font", "fontObject": font};
         } else {
-          auxiliaryFont.push({"index": auxiliaryFont.length, "fontObject": font})
+          auxiliaryFont.push({"name": "auxiliary-font-" + (auxiliaryFont.length + 1), "fontObject": font})
         }
       })
     }
-    var result = {"textFont": textFont, "displayFont": displayFont, "auxiliaryFont": auxiliaryFont}
+    var result = [textFont, displayFont].concat(auxiliaryFont);
     return result
   }
 }
@@ -237,31 +159,10 @@ function setBaseFontSize (mobileRamp, desktopRamp) {
   }
   return output
 }
-function mostUsed(foundFonts) {
-  var most;
-  _.forEach(foundFonts, function(font){
-    if (!most) {
-      most = font
-    } else if (font.count > most.count) {
-      most = font
-    }
-  })
-  return most;
-}
 function getUniqueStyles(styles) {
-  var uniqueStyles = [];
-  styles.forEach(function(style){
-    var found = false;
-    uniqueStyles.forEach(function(sortedStyle){
-      if (getTag(String(style.name())).tag == getTag(String(sortedStyle.name())).tag) {
-        found = true;
-      }
-    })
-    if (!found) {
-      uniqueStyles.push(style)
-    }
-  })
-  return uniqueStyles;
+  return _.uniqBy(styles, (style) => {
+    return common.getTag(String(style.name())).tag
+  });
 }
 function getTextStyleAsJson (style) {
   var attributes = style.style().textStyle().attributes();
@@ -288,62 +189,45 @@ function getTextStyleAsJson (style) {
   return style;
 }
 function popPToTop (styles) {
-  var hasParagraph = false;
-  styles.forEach(function(style, indx){
-    if (getTag(String(style.name)).selector == "p") {
-      array_move(styles, indx, 0);
-      hasParagraph = true;
-    }
-  });
+  styles = _.sortBy(styles, (style) => {return common.getTag(String(style.name)).selector === 'p' ? 0 : 1;})
+  var hasParagraph = _.find(styles, (style) => {return common.getTag(String(style.name)).selector === 'p'});
   return {"styles": styles, "hasParagraph": hasParagraph}
 }
-function array_move(arr, old_index, new_index) {
-  if (new_index >= arr.length) {
-    var k = new_index - arr.length + 1;
-    while (k--) {
-      arr.push(undefined);
-    }
-  }
-  arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
-  return arr; 
-};
-function getTag (name) {
-  var regex = /^\[(([A-Za-z])*(\d\.*[0-9]*|[\P|\p]+))(.*)\]\s(.*)/g,
-      tag = name,
-      isTag = false,
-      match = regex.exec(name),
-      ramp,
-      selector,
-      variant,
-      cssSelector,
-      tagName
-  if (match) {
-    isTag = true
-    tag = match[1].toLowerCase()
-    ramp = match[2].toLowerCase()
-    selector = match[3].toLowerCase()
-    cssSelector = match[3].toLowerCase()
-    if (cssSelector != "p") {
-      cssSelector = "h" + selector
-    }
-    variant = match[4]
-    tagName = match[5]
-  }
-  return {"isTag": isTag, "tag": tag, "ramp": ramp, "selector": selector, "cssSelector": cssSelector, "variant": variant, "name": tagName}
-}
-function hyphenize (str) {
-  return String(str).replace(/[\.\,\[\]]/g, '_').replace(/[\s]/g, '-').replace(/\-\-\-/g, '-').replace(/\-\-/g, '-').toLowerCase();
-}
 function getFontAndWeight (fontName) {
+
+  var fontWeightWords = [
+      {"name": "thin", "value": 100},
+      {"name": "hairline", "value": 100},
+
+      {"name": "extralight", "value": 200},
+      {"name": "ultralight", "value": 200},
+
+      {"name": "light", "value": 300},
+
+      {"name": "normal", "value": 400},
+      {"name": "regular", "value": 400},
+      {"name": "", "value": 400},
+
+      {"name": "medium", "value": 500},
+
+      {"name": "semibold", "value": 600},
+      {"name": "demibold", "value": 600},
+
+      {"name": "bold", "value": 700},
+
+      {"name": "extrabold", "value": 800},
+      {"name": "ultrabold", "value": 800},
+
+      {"name": "black", "value": 900},
+      {"name": "heavy", "value": 900}
+    ]
   fontName = String(fontName)
-  var hyphenIndex = fontName.indexOf("-"),
       fontWeight = 400,
-      fontStyle = "normal",
-      fontName;
-  if (hyphenIndex > 0) {
-    var fontWeightWord = fontName.slice(fontName.indexOf("-") + 1);
-    fontName = fontName.slice(0, fontName.indexOf("-"));
-    fontWeightWord = fontWeightWord.replace(/[\s]/g, '').toLowerCase();
+      fontStyle = "normal"
+  if (fontName.indexOf("-")) {
+    var fontWeightWord = fontName.split("-");
+    fontName = String(fontWeightWord[0]);
+    fontWeightWord = String(fontWeightWord[1]).replace(/[\s]/g, '').toLowerCase();
 
     // find indexOf("italic")
     if (fontWeightWord.indexOf("italic") >= 0) {
@@ -353,14 +237,9 @@ function getFontAndWeight (fontName) {
       fontStyle = "oblique"
       fontWeightWord = fontWeightWord.replace("oblique", "")
     }
-
-    fontWeightWords.forEach(function(thisFontWeight){
-      if (fontWeightWord == thisFontWeight.name) {
-        fontWeight = thisFontWeight.value
-      }
-    })
+    fontWeight = _.find(fontWeightWords, (thisFontWeight) => { return (fontWeightWord === thisFontWeight.name)}).value
   }
-  var returnFontName = String(fontName.replace(/([A-Z])/g, ' $1')).trim()
+  var returnFontName = String(fontName).replace(/([A-Z])/g, ' $1').trim()
   return {"fontFamily": '"' + returnFontName + '"', "fontWeight": fontWeight, "fontStyle": fontStyle}
 }
 
@@ -371,6 +250,7 @@ function compareNameLength(a,b) {
     return 1;
   return 0;
 }
+// TODO Needs refactoring
 function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
   var output = "",
       isResponsive = false,
@@ -382,79 +262,40 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
         exceptionDesktopStyles = desktopStyles.slice()
       }
 
-  mobileStyles.forEach(function(thisStyle) {
-    var desktopTag;
-    var desktopStyleName;
+  _.forEach(mobileStyles, (thisStyle) => {
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-    if (tag.isTag && tag.variant) {
-      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
-    }
-    // replace "m" with "h"
+    var tag = common.getTag(styleName);
     if (tag.isTag) {
       styleName = tag.cssSelector.toUpperCase() + " " + tag.name
     }
     output += "// " + styleName + "\n";
+
+
     // find a counterpart desktop style
     var found = false;
-    var thisDesktopStyle
-    _.forEach(desktopStyles, function(desktopStyle) {
-      desktopStyleName = String(desktopStyle.name);
-      desktopTag = getTag(desktopStyleName);
-      if (desktopTag.isTag && desktopTag.variant) {
-        desktopStyleName = desktopStyleName.slice(0, desktopStyleName.toLowerCase().indexOf(desktopTag.variant)) + desktopStyleName.toLowerCase().slice(desktopStyleName.indexOf(desktopTag.variant) + desktopTag.variant.length);
-      }
-      if (!desktopTag.isTag)
-      desktopTag.tag = hyphenize(desktopTag.tag).toLowerCase();
-      if (tag.isTag && desktopTag.selector == tag.selector && !found) {
-        found = true;
-        thisDesktopStyle = desktopStyle
-        var index = exceptionDesktopStyles.indexOf(thisDesktopStyle);
-        if (index > -1) {
-          exceptionDesktopStyles.splice(index, 1);
-        }
-      }
-    })
-
-    // set vars
-    var fontType = "text-font"
-    if (fonts.displayFont && fonts.displayFont.font == thisStyle.font) {
-      fontType = "display-font"
-    } else {
-      _.forEach(fonts.auxiliaryFont, function(font){
-        if (thisStyle.font == font.fontObject.font) {
-          fontType = "auxiliary-font-" + String(font.index + 1)
-        }
-      })
-    }
-
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
-
-    // if desktop, set desktop vars
+    var thisDesktopStyle = _.find(desktopStyles, (desktopStyle) => {return common.getTag(String(desktopStyle.name)).selector == tag.selector})
+    
     if (thisDesktopStyle) {
+      exceptionDesktopStyles = _.pull(exceptionDesktopStyles, thisDesktopStyle)
+      var desktopTag = common.getTag(String(thisDesktopStyle.name));
+      if (!desktopTag.isTag) {
+        desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
+      }
+
+      output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+
+      // if desktop, set desktop vars
       output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts)
       isResponsive = true
     }
     // give me those sweet sweet mixins
     output += outputMixin(tag, 0, isResponsive)
   })
-  _.forEach(exceptionDesktopStyles, function(thisStyle) {
+  _.forEach(exceptionDesktopStyles, (thisStyle) => {
     var styleName = String(thisStyle.name);
-    var tag = getTag(styleName);
-    if (!tag.isTag) {
-      tag.tag = hyphenize(tag.tag);
-    }
-    if (tag.isTag && tag.variant) {
-      var styleName = styleName.slice(0, styleName.toLowerCase().indexOf(tag.variant)) + styleName.slice(styleName.toLowerCase().indexOf(tag.variant) + tag.variant.length);
-    }
-    // replace "m" with "h"
-    if (tag.isTag && tag.selector == "p") {
-      styleName = styleName.slice(0,1) + styleName.slice(2)
-    } else if (tag.isTag) {
-      styleName = styleName.slice(0,1) + "H" + styleName.slice(2)
+    var tag = common.getTag(styleName);
+    if (tag.isTag) {
+      styleName = tag.cssSelector.toUpperCase() + " " + tag.name
     }
     output += "// " + styleName + "\n";
 
@@ -465,27 +306,21 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
 }
 
 function outputSetupVars(style, baseSize, fonts) {
-  var styleName = String(style.name),
-      tag = getTag(styleName);
-  tag.tag = hyphenize(tag.tag)
-  var pre = "$" + tag.tag,
-      output = "";
+  var styleName = String(style.name)
+  var tag = common.getTag(styleName)
+  if (!tag.isTag) {
+    tag.tag = _.kebabCase(tag.tag)
+  }
+  
+  var pre = "$" + tag.tag
+  var output = ""
 
   // SET UP FONT FAMILY STUFF
-
-  var fontType = "text-font"
-  if (fonts.displayFont && fonts.displayFont.font == style.font) {
-    fontType = "display-font"
-  } else {
-    _.forEach(fonts.auxiliaryFont, function(font){
-      if (style.font == font.fontObject.font) {
-        fontType = "auxiliary-font-" + String(font.index + 1)
-      }
-    })
-  }
-  output += pre + "-font-family: $" + fontType + ", $" + fontType + "-fallback-fonts;\n"
+  var fontType = _.find(fonts, (oneFont) => { return oneFont.fontObject.font == String(style.font)})
+  output += pre + "-font-family: $" + fontType.name + ", $" + fontType.name + "-fallback-fonts;\n"
   if (outputFontWeight) {
-    output += pre + "-font-weight: $" + fontType + "-weight;\n"
+    output += pre + "-font-weight: $" + fontType.name + "-weight;\n"
+    output += pre + "-font-style: $" + fontType.name + "-style;\n"
   }
   fontSize = style.size + "px"
   if (useRem) {
@@ -499,16 +334,16 @@ function outputSetupVars(style, baseSize, fonts) {
   output += pre + "-letter-spacing: " + letterSpacing;
 
   var textTransform = style.textTransform;
-  if (String(textTransform) == "0") {
+  if (String(textTransform) === "0") {
     textTransform = "none"
-  } else if (String(textTransform) == "1") {
+  } else if (String(textTransform) === "1") {
     textTransform = "uppercase"
-  } else if (String(textTransform) == "2") {
+  } else if (String(textTransform) === "2") {
     textTransform = "lowercase"
   }
   output += pre + "-text-transform: " + textTransform + ";\n";
   var lineHeight = Math.round(style.lineHeight / style.size * 100) / 100;
-  if (String(lineHeight) == "0") {
+  if (String(lineHeight) === "0") {
     lineHeight = "normal";
   }
   output += pre + "-line-height: " + lineHeight + ";\n"
@@ -537,29 +372,28 @@ function outputMixin (tag, indent, isResponsive) {
   }
   indent = text;
   if (!tag.isTag) {
-    var newTag = tag.tag
-    tag.tag = newTag;
-    tag.cssSelector = newTag
+    tag.tag = _.kebabCase(tag.tag)
+    tag.cssSelector = tag.tag
   }
   var attributes = ["font-family", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   if (outputFontWeight) {
     attributes = ["font-family", "font-weight", "font-style", "font-size", "letter-spacing", "line-height", "text-transform", "text-decoration", "margin"]
   }
-  _.forEach(attributes, function(attribute){
-    output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-" + attribute + " {\n"
-    output += indent + "  " + attribute + ": $" + hyphenize(tag.tag) + "-" + attribute + ";\n"
+  _.forEach(attributes, function(attribute) {
+    output += indent + "@mixin " + tag.cssSelector + "-" + attribute + " {\n"
+    output += indent + "  " + attribute + ": $" + tag.tag + "-" + attribute + ";\n"
     if (isResponsive) {
       output += indent + "  @media screen and (min-width: " + breakpointVariable + ") {\n"
-      output += indent + "    " + attribute + ": $d" + hyphenize(tag.selector) + "-" + attribute + ";\n"
+      output += indent + "    " + attribute + ": $d" + tag.selector + "-" + attribute + ";\n"
       output += indent + "  }\n"
     }
     output += indent + "}\n"
   })
   // now tie it all together
 
-  output += indent + "@mixin " + hyphenize(tag.cssSelector) + "-text-style {\n"
+  output += indent + "@mixin " + tag.cssSelector + "-text-style {\n"
   _.forEach(attributes, function(attribute){
-    output += indent + "  @include " + hyphenize(tag.cssSelector) + "-" +attribute + ";\n"
+    output += indent + "  @include " + tag.cssSelector + "-" +attribute + ";\n"
   })
   output += indent + "}\n\n"
   return output

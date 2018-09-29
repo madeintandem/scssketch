@@ -6,52 +6,30 @@ export default function(context) {
   const pages = document.sketchObject.pages()
   alignText(pages)
 }
-function checkForTextStyleSymbol (symbol) {
-    var result = false
-    var symbolName = String(symbol.name());
-    if (symbolName.startsWith("Text Style / All / [") && symbolName.indexOf("]") > 0) {
-        result = true;
-    }
-    return result
-}
 function centerVertically(layer, parentHeight) {
-    var layerWidth = parseFloat(layer.frame().width()) * 1;
-    var layerHeight = parseFloat(layer.frame().height()) * 1;
-    var layerXPos = parseFloat(layer.frame().x()) * 1;
-    var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
-    layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight))
+  var layerWidth = parseFloat(layer.frame().width()) * 1;
+  var layerHeight = parseFloat(layer.frame().height()) * 1;
+  var layerXPos = parseFloat(layer.frame().x()) * 1;
+  var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
+  layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight))
 }
 function alignText (pages) {
-    var symbolsPage;
-    pages.forEach(function(page){
-        if (page.name() == "Symbols") {
-            symbolsPage = page;
-        }
+  var symbolsPage = _.find(pages, (page) => {return String(page.name()) === "Symbols"});
+  if (symbolsPage) {
+    var symbolsPageLayers = symbolsPage.layers();
+    var textStyleSymbols = _.filter(symbolsPageLayers, (symbol) => {
+      return (String(symbol.name()).startsWith("Text Style / All / [") && String(symbol.name()).indexOf("]") > 0)
     })
-    if (symbolsPage) {
-        var symbolsPageLayers = symbolsPage.layers();
-        symbolsPageLayers.forEach(function(symbol, index) {
-            if (checkForTextStyleSymbol(symbol)) {
-                var symbolHeight = String(symbol.frame().height()) * 1;
-                symbol.layers().forEach(function(layer){
-                    if(String(layer.class()) == "MSTextLayer") {
-                        centerVertically(layer, symbolHeight)
-                    }
-                })
-                if (String(symbol.name()).toLowerCase().endsWith("centered")) {
-                    symbol.layers().forEach(function(layer){
-                        if(String(layer.class()) == "MSTextLayer") {
-                            layer.textAlignment = 2;
-                        }
-                    })
-                } else if (String(symbol.name()).toLowerCase().endsWith("right")) {
-                    symbol.layers().forEach(function(layer){
-                        if(String(layer.class()) == "MSTextLayer") {
-                            layer.textAlignment = 1;
-                        }
-                    })
-                }
-            }
-        })
-    }
+    _.forEach(textStyleSymbols, (symbol) => {
+      var layers = _.filter(symbol.layers(), (layer) => {return String(layer.class()) === "MSTextLayer"})
+      _.forEach(layers, (layer) => {
+        centerVertically(layer, String(symbol.frame().height()) * 1)
+        if (String(symbol.name()).toLowerCase().endsWith("centered")) {
+          layer.textAlignment = 2;
+        } else if (String(symbol.name()).toLowerCase().endsWith("right")) { 
+          layer.textAlignment = 1;
+        }
+      })
+    })
+  }
 }
