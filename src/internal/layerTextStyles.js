@@ -8,33 +8,6 @@ var mobileBaseFontSize = defaultBaseFontSize;
 var desktopBaseFontSize = defaultBaseFontSize;
 var outputFontWeight = true;
 
-var fontWeightWords = [
-    {"name": "thin", "value": 100},
-    {"name": "hairline", "value": 100},
-
-    {"name": "extralight", "value": 200},
-    {"name": "ultralight", "value": 200},
-
-    {"name": "light", "value": 300},
-
-    {"name": "normal", "value": 400},
-    {"name": "regular", "value": 400},
-    {"name": "", "value": 400},
-
-    {"name": "medium", "value": 500},
-
-    {"name": "semibold", "value": 600},
-    {"name": "demibold", "value": 600},
-
-    {"name": "bold", "value": 700},
-
-    {"name": "extrabold", "value": 800},
-    {"name": "ultrabold", "value": 800},
-
-    {"name": "black", "value": 900},
-    {"name": "heavy", "value": 900}
-  ]
-
 module.exports = {
   parse: function (sharedTextStyles) { 
     var desktop = []
@@ -148,10 +121,10 @@ module.exports = {
       displayFont = {"name": "display-font", "fontObject": displayFont[0]};
     } else {
       // there are more than two fonts
-      var paragraphFont = _.find(foundFonts, {isParagraph: 'true'})
+      var paragraphFont = _.find(foundFonts, (obj) => { return obj.isParagraph})
       if (paragraphFont) {
         textFont = {"name": "text-font", "fontObject": paragraphFont}
-        subArray = _.pull(subArray, paragraphFont.font);
+        subArray = _.pull(subArray, paragraphFont);
       }
       _.forEach(subArray, function(font){
         if ((!displayFont && font === _.max(foundFonts, (font) => {return font.count})) || font === displayFont) {
@@ -216,26 +189,38 @@ function getTextStyleAsJson (style) {
   return style;
 }
 function popPToTop (styles) {
-  var hasParagraph = false;
-  styles.forEach(function(style, indx){
-    if (common.getTag(String(style.name)).selector === "p") {
-      array_move(styles, indx, 0);
-      hasParagraph = true;
-    }
-  });
+  styles = _.sortBy(styles, (style) => {return common.getTag(String(style.name)).selector === 'p' ? 0 : 1;})
+  var hasParagraph = _.find(styles, (style) => {return common.getTag(String(style.name)).selector === 'p'});
   return {"styles": styles, "hasParagraph": hasParagraph}
 }
-function array_move(arr, old_index, new_index) {
-  if (new_index >= arr.length) {
-    var k = new_index - arr.length + 1;
-    while (k--) {
-      arr.push(undefined);
-    }
-  }
-  arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
-  return arr; 
-}
 function getFontAndWeight (fontName) {
+
+  var fontWeightWords = [
+      {"name": "thin", "value": 100},
+      {"name": "hairline", "value": 100},
+
+      {"name": "extralight", "value": 200},
+      {"name": "ultralight", "value": 200},
+
+      {"name": "light", "value": 300},
+
+      {"name": "normal", "value": 400},
+      {"name": "regular", "value": 400},
+      {"name": "", "value": 400},
+
+      {"name": "medium", "value": 500},
+
+      {"name": "semibold", "value": 600},
+      {"name": "demibold", "value": 600},
+
+      {"name": "bold", "value": 700},
+
+      {"name": "extrabold", "value": 800},
+      {"name": "ultrabold", "value": 800},
+
+      {"name": "black", "value": 900},
+      {"name": "heavy", "value": 900}
+    ]
   fontName = String(fontName)
       fontWeight = 400,
       fontStyle = "normal"
@@ -270,6 +255,7 @@ function compareNameLength(a,b) {
     return 1;
   return 0;
 }
+// TODO Needs refactoring
 function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
   var output = "",
       isResponsive = false,
