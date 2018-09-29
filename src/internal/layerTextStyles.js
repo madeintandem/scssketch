@@ -14,6 +14,7 @@ module.exports = {
     var mobile = []
     var assorted = []
     var sortedStyles = _.sortBy(sharedTextStyles.objects(), [style => style.name()], ["desc"])
+
     _.forEach(getUniqueStyles(sortedStyles), (thisStyle) => {
       var tag = common.getTag(String(thisStyle.name()))
       var style = getTextStyleAsJson(thisStyle)

@@ -40,7 +40,6 @@ module.exports = {
       styles += "\n"
     }
     return styles
-  
   }
 }
 
@@ -55,7 +54,6 @@ function opacityExists(fill) {
 function setGradient(fill, style) {
   var gradientType = getGradientType(fill, style)
   var prefix = ""
-  var gradients = ""
   var needToFlip = false
   var offset = 0
   
@@ -76,15 +74,17 @@ function setGradient(fill, style) {
     prefix = conic.prefix
     offset = conic.offset
   }
-
-  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip)
-  gradients += prefix + stops + ", "
   
+  var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip)
+  return setGradients(stops, prefix, gradientType)
+}
+
+function setGradients(stops, prefix, gradientType) {
+  var gradients += prefix + stops + ", "
   if (gradientType.type == 2) {
     gradients = gradients.slice(0, -3) + ", "
     gradients += getGradientStops([gradientType.stopsArray[0]])
-    gradients = gradients.slice(0, gradients.lastIndexOf(")"))
-    gradients = gradients.slice(0, gradients.lastIndexOf(")"))
+    gradients += gradients.slice(0, gradients.lastIndexOf(")"))
     gradients += ") 100%), "
   }
   
@@ -92,8 +92,7 @@ function setGradient(fill, style) {
 }
 
 function getGradientType(fill, style) {
-  var stopsArray = fill.gradient().stops()
-  stopsArray = _.sortBy(stopsArray, [style => style.position()], ["desc"])
+  var stopsArray = _.sortBy(fill.gradient().stops(), [style => style.position()], ["desc"])
   var gradientOpacity = 1;
   if (fill.contextSettings()) {
     gradientOpacity = parseFloat(fill.contextSettings().opacity());
@@ -162,6 +161,5 @@ function getGradientStops(stops, offset, gradientOpacity, needToFlip) {
     position = Math.round(100 * position) / 100
     result = result + rgba + " " + position + "%, "
   })
-  result = result.slice(0, -2) + ")"
-  return result;
+  return result.slice(0, -2) + ")"
 }

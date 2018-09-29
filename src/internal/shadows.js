@@ -36,22 +36,25 @@ module.exports = {
 }
 
 function getShadows(styles) {
-  var result = ""
   var theShadows = styles.shadows();
   var theShadows = theShadows.reverse();
-  _.forEach(theShadows, (style) => {
+  
+  var shadowValueResult = _.reduce(theShadows, (result, style) => {
     if (style.isEnabled()) {
-      result += constructShadowValue(style)
+      return result + constructShadowValue(style)
     }
-  })
+  }, "")
+
   var theInnerShadows = styles.innerShadows();
   theInnerShadows = theInnerShadows.reverse();
-  _.forEach(theInnerShadows, (style) => {
+
+  var shadowResult = _.reduce(theInnerShadows, (result, style) => {
     if (style.isEnabled()) {
-      result += constructShadowValue(style, "inset")
-    }
-  })
-  return result.slice(0,-2)
+      return result + constructShadowValue(style, "inset")
+    }  
+  }, shadowValueResult)
+  
+  return shadowResult.slice(0,-2)
 }
 
 function constructShadowValue(style, inset) {

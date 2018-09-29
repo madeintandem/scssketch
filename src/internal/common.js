@@ -49,8 +49,7 @@ module.exports = {
         rgba = rgba + removeZeros(value * opacityMultiplier) + ", "
       }
     })
-    rgba = rgba.slice(0, -2) + ")"
-    return rgba
+    return rgba.slice(0, -2) + ")"
   }
 
 }
@@ -62,6 +61,5 @@ function removeZeros(str){
   if (str.indexOf('.')>-1){
       str = str.replace(regEx1,'')  // Remove trailing 0's
   }
-  str = str.replace(regEx2,'')  // Remove trailing decimal
-  return str
+  return str.replace(regEx2,'')  // Remove trailing decimal
 }
