@@ -17288,106 +17288,15 @@ var dFontSize, dLineHeight, dScaleFactor, mFontSize, mLineHeight, mScaleFactor;
   sharedStyles = doc.sketchObject.documentData().layerTextStyles();
   var window = createWindow();
   var alert = window[0];
-  var response = alert.runModal();
+  var response = alert.runModal(); // They clicked OK
 
   if (response === 1000) {
-    // They clicked OK
-    var desktopType = findAndGetType({
-      baseFontSize: parseInt(dFontSize.stringValue()),
-      lineHeightFactor: parseFloat(dLineHeight.stringValue()),
-      scaleFactor: parseFloat(dScaleFactor.stringValue())
-    });
-    var mobileType = findAndGetType({
-      baseFontSize: parseInt(mFontSize.stringValue()),
-      lineHeightFactor: parseFloat(mLineHeight.stringValue()),
-      scaleFactor: parseFloat(mScaleFactor.stringValue())
-    });
-
-    if (desktopType) {
-      updateTypeStyles(desktopType, "desktop");
-    }
-
-    if (mobileType) {
-      updateTypeStyles(mobileType);
-    }
+    updateDesktopStyles();
+    updateMobileStyles();
   }
 
-  var pages = doc.sketchObject.pages();
-  alignText(pages);
-}); // THIS IS THE MEAT OF THIS THING
-// ---------------------------------------------------------------------------
-
-var calculateType = function calculateType(options) {
-  // Get the three values from the DOM
-  var baseFontSize = parseInt(options.baseFontSize);
-  var lineHeightFactor = parseFloat(options.lineHeightFactor);
-  var scaleFactor = parseFloat(options.scaleFactor); // We need a base unit for line heights.
-  // We will be reusing this sucker a lot in annoyingly complicated ways which I will try to describe later.
-  // baseLineHeight is the baseFontSize times the lineHeightFactor, rounded to the nearest integer.
-
-  var baseLineHeight = Math.round(baseFontSize * lineHeightFactor); // Here's an empty array where we will dump styles.
-
-  var styles = []; // Loop five times, with the variable i as the index
-
-  var i = 1; // We start with h1, not h0
-
-  while (i <= numberOfTextStyles) {
-    // Here I'm going to start with a data object to which I will add style attributes
-    var temp = {}; // Add a CSS selector key/value so we know what the style is for
-
-    temp.selector = i; // Calculate font size
-    // This is a little complex, it determines the exponent for the scale factor for a given style
-
-    var adjustedIndex = numberOfTextStyles - numberOfStylesSmallerThanBaseSize - i; // Raise the scale factor exponent however many times as needed.
-
-    var adjustedScaleFactor = Math.pow(scaleFactor, adjustedIndex); // Multiply the scale factor with the font size
-
-    temp.fontSize = Math.round(baseFontSize * adjustedScaleFactor); // Calculate line height
-    // Remember the "annoyingly complicated" part?
-    // We want the line height to be rounded UP to the next multiple of baseLineHeight
-
-    temp.lineHeight = Math.ceil(temp.fontSize / baseLineHeight) * baseLineHeight; // Ok, now push the temp object to the array
-
-    styles.push(temp);
-    i = i + 1;
-  } // Pushing the paragraph styles
-
-
-  var paragraphStyles = {
-    // Paragraph CSS selector
-    selector: 'p',
-    // Paragraphs are the base font size...
-    fontSize: baseFontSize,
-    // ...and base line height.
-    lineHeight: baseLineHeight
-  }; // Stick the paragraph styles into the styles array and we're done 
-
-  styles.push(paragraphStyles); // return the array
-
-  return styles;
-}; // Some additional notes:
-// The plugin will need to be able to apply different styles to desktop and mobile.
-// My initial thoughts would be to show six inputs, then run through the function twice
-// and apply the styles to the different type styles separately.
-
-
-function findAndGetType(options) {
-  // Get the necessary vars from the options passed in
-  var baseFontSize = options.baseFontSize;
-  var lineHeightFactor = options.lineHeightFactor;
-  var scaleFactor = options.scaleFactor;
-
-  if (baseFontSize && lineHeightFactor && scaleFactor) {
-    // We have what we need, go ahead and calculate
-    var result = calculateType({
-      baseFontSize: baseFontSize,
-      lineHeightFactor: lineHeightFactor,
-      scaleFactor: scaleFactor
-    });
-    return result;
-  }
-} // Let's build a dialog box for inputs
-
+  alignText(doc.sketchObject.pages());
+}); // Let's build a dialog box for inputs
 
 function createWindow() {
   var alert = COSAlertWindow.new();
@@ -17485,7 +17394,97 @@ function createWindow() {
   return [alert];
 }
 
-var findLayersMatchingPredicate_inContainer_filterByType = function findLayersMatchingPredicate_inContainer_filterByType(predicate, container, layerType) {
+function updateDesktopStyles() {
+  var desktopType = findAndGetType({
+    baseFontSize: parseInt(dFontSize.stringValue()),
+    lineHeightFactor: parseFloat(dLineHeight.stringValue()),
+    scaleFactor: parseFloat(dScaleFactor.stringValue())
+  });
+  updateTypeStyles(desktopType, "d");
+}
+
+function updateMobileStyles() {
+  var mobileType = findAndGetType({
+    baseFontSize: parseInt(mFontSize.stringValue()),
+    lineHeightFactor: parseFloat(mLineHeight.stringValue()),
+    scaleFactor: parseFloat(mScaleFactor.stringValue())
+  });
+  updateTypeStyles(mobileType, "m");
+} // Some additional notes:
+// The plugin will need to be able to apply different styles to desktop and mobile.
+// My initial thoughts would be to show six inputs, then run through the function twice
+// and apply the styles to the different type styles separately.
+
+
+function findAndGetType(options) {
+  // Get the necessary vars from the options passed in
+  var baseFontSize = options.baseFontSize;
+  var lineHeightFactor = options.lineHeightFactor;
+  var scaleFactor = options.scaleFactor;
+
+  if (baseFontSize && lineHeightFactor && scaleFactor) {
+    // We have what we need, go ahead and calculate
+    return calculateType({
+      baseFontSize: baseFontSize,
+      lineHeightFactor: lineHeightFactor,
+      scaleFactor: scaleFactor
+    });
+  }
+} // THIS IS THE MEAT OF THIS THING
+// ---------------------------------------------------------------------------
+
+
+function calculateType(options) {
+  // Get the three values from the DOM
+  var baseFontSize = parseInt(options.baseFontSize);
+  var lineHeightFactor = parseFloat(options.lineHeightFactor);
+  var scaleFactor = parseFloat(options.scaleFactor); // We need a base unit for line heights.
+  // We will be reusing this sucker a lot in annoyingly complicated ways which I will try to describe later.
+  // baseLineHeight is the baseFontSize times the lineHeightFactor, rounded to the nearest integer.
+
+  var baseLineHeight = Math.round(baseFontSize * lineHeightFactor); // Here's an empty array where we will dump styles.
+
+  var styles = []; // Loop five times, with the variable i as the index
+
+  var i = 1; // We start with h1, not h0
+
+  while (i <= numberOfTextStyles) {
+    // Here I'm going to start with a data object to which I will add style attributes
+    var temp = {}; // Add a CSS selector key/value so we know what the style is for
+
+    temp.selector = i; // Calculate font size
+    // This is a little complex, it determines the exponent for the scale factor for a given style
+
+    var adjustedIndex = numberOfTextStyles - numberOfStylesSmallerThanBaseSize - i; // Raise the scale factor exponent however many times as needed.
+
+    var adjustedScaleFactor = Math.pow(scaleFactor, adjustedIndex); // Multiply the scale factor with the font size
+
+    temp.fontSize = Math.round(baseFontSize * adjustedScaleFactor); // Calculate line height
+    // Remember the "annoyingly complicated" part?
+    // We want the line height to be rounded UP to the next multiple of baseLineHeight
+
+    temp.lineHeight = Math.ceil(temp.fontSize / baseLineHeight) * baseLineHeight; // Ok, now push the temp object to the array
+
+    styles.push(temp);
+    i = i + 1;
+  } // Pushing the paragraph styles
+
+
+  var paragraphStyles = {
+    // Paragraph CSS selector
+    selector: 'p',
+    // Paragraphs are the base font size...
+    fontSize: baseFontSize,
+    // ...and base line height.
+    lineHeight: baseLineHeight
+  }; // Stick the paragraph styles into the styles array and we're done 
+
+  styles.push(paragraphStyles); // return the array
+
+  return styles;
+}
+
+function findLayersMatchingPredicate_inContainer_filterByType(predicate, container, layerType) {
   var scope;
 
   switch (layerType) {
@@ -17536,9 +17535,9 @@ var findLayersMatchingPredicate_inContainer_filterByType = function findLayersMa
   }
 
   return NSArray.array(); // Return an empty array if no matches were found
-};
+}
 
-var findLayersWithSharedStyleNamed_inContainer = function findLayersWithSharedStyleNamed_inContainer(styleName, newStyle, container) {
+function findLayersWithSharedStyleNamed_inContainer(styleName, newStyle, container) {
   // Get sharedObjectID of shared style with specified name
   var styleSearchPredicate = NSPredicate.predicateWithFormat("name == %@", styleName);
   var filteredStyles = sharedStyles.objects().filteredArrayUsingPredicate(styleSearchPredicate);
@@ -17557,14 +17556,13 @@ var findLayersWithSharedStyleNamed_inContainer = function findLayersWithSharedSt
   }
 
   return filteredLayers;
-};
+}
 
 function checkForMatchingStyles(existingTextObjects, newStyleName, newStyle) {
   if (existingTextObjects.count() != 0) {
     for (var i = 0; i < existingTextObjects.count(); i++) {
       var existingName = existingTextObjects[i].name();
       var style = existingTextObjects.objectAtIndex(i);
-      var textStyle;
 
       if (existingName == newStyleName) {
         existingTextObjects[i].updateToMatch(newStyle);
@@ -17673,18 +17671,13 @@ function setTypeStyle(style) {
   newText.addAttribute_value("NSParagraphStyle", paragraphStyle);
   newText.addAttribute_value("NSStrikethrough", strikethrough);
   newText.addAttribute_value("NSUnderline", underline);
-  checkForMatchingStyles(sharedStyles.objects(), name, newText.style());
-  findLayersWithSharedStyleNamed_inContainer(newText.name(), newText.style());
+  checkForMatchingStyles(sharedStyles.objects(), name, newText.style()); // TODO: Drew, this is not being used anywhere
+
+  filteredLayers = findLayersWithSharedStyleNamed_inContainer(newText.name(), newText.style());
   doc.sketchObject.reloadInspector();
 }
 
-function updateTypeStyles(styleMap, desktopRamp) {
-  var ramp = "m";
-
-  if (desktopRamp == "desktop") {
-    ramp = "d";
-  }
-
+function updateTypeStyles(styleMap, ramp) {
   styleMap.forEach(function (calculatedStyle) {
     var token = "[" + ramp + calculatedStyle.selector;
     var changes = {

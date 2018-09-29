@@ -269,6 +269,7 @@ function getFontAndWeight (fontName) {
   fontName = String(fontName),
       fontWeightFound,
       fontStyle = "normal"
+      
   if (fontName.indexOf("-")) {
     var fontWeightWord = fontName.split("-");
     fontName = String(fontWeightWord[0]);

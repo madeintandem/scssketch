@@ -17284,14 +17284,6 @@ __webpack_require__.r(__webpack_exports__);
   alignText(pages);
 });
 
-function centerVertically(layer, parentHeight) {
-  var layerWidth = parseFloat(layer.frame().width()) * 1;
-  var layerHeight = parseFloat(layer.frame().height()) * 1;
-  var layerXPos = parseFloat(layer.frame().x()) * 1;
-  var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
-  layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight));
-}
-
 function alignText(pages) {
   var symbolsPage = _.find(pages, function (page) {
     return String(page.name()) === "Symbols";
@@ -17299,27 +17291,42 @@ function alignText(pages) {
 
   if (symbolsPage) {
     var symbolsPageLayers = symbolsPage.layers();
-
-    var textStyleSymbols = _.filter(symbolsPageLayers, function (symbol) {
-      return String(symbol.name()).startsWith("Text Style / All / [") && String(symbol.name()).indexOf("]") > 0;
-    });
+    var textStyleSymbols = filterTextStyleSymbols(symbolsPageLayers);
 
     _.forEach(textStyleSymbols, function (symbol) {
       var layers = _.filter(symbol.layers(), function (layer) {
         return String(layer.class()) === "MSTextLayer";
       });
 
-      _.forEach(layers, function (layer) {
-        centerVertically(layer, String(symbol.frame().height()) * 1);
-
-        if (String(symbol.name()).toLowerCase().endsWith("centered")) {
-          layer.textAlignment = 2;
-        } else if (String(symbol.name()).toLowerCase().endsWith("right")) {
-          layer.textAlignment = 1;
-        }
-      });
+      layer.textAlignment = setTextAlignment(layers, symbol);
     });
   }
+}
+
+function filterTextStyleSymbols(symbolsPageLayers) {
+  return _.filter(symbolsPageLayers, function (symbol) {
+    return String(symbol.name()).startsWith("Text Style / All / [") && String(symbol.name()).indexOf("]") > 0;
+  });
+}
+
+function setTextAlignment(layers, symbol) {
+  _.forEach(layers, function (layer) {
+    centerVertically(layer, String(symbol.frame().height()) * 1);
+
+    if (String(symbol.name()).toLowerCase().endsWith("centered")) {
+      return 2;
+    } else if (String(symbol.name()).toLowerCase().endsWith("right")) {
+      return 1;
+    }
+  });
+}
+
+function centerVertically(layer, parentHeight) {
+  var layerWidth = parseFloat(layer.frame().width()) * 1;
+  var layerHeight = parseFloat(layer.frame().height()) * 1;
+  var layerXPos = parseFloat(layer.frame().x()) * 1;
+  var yPos = (parseFloat(parentHeight) - parseFloat(layerHeight)) / 2;
+  layer.frame().setRectByIgnoringProportions(NSMakeRect(layerXPos, yPos, layerWidth, layerHeight));
 }
 
 /***/ }),
@@ -17429,8 +17436,7 @@ module.exports = {
         rgba = rgba + removeZeros(value * opacityMultiplier) + ", ";
       }
     });
-    rgba = rgba.slice(0, -2) + ")";
-    return rgba;
+    return rgba.slice(0, -2) + ")";
   }
 };
 
@@ -17443,9 +17449,7 @@ function removeZeros(str) {
     str = str.replace(regEx1, ''); // Remove trailing 0's
   }
 
-  str = str.replace(regEx2, ''); // Remove trailing decimal
-
-  return str;
+  return str.replace(regEx2, ''); // Remove trailing decimal
 }
 
 /***/ }),
@@ -17517,7 +17521,6 @@ function opacityExists(fill) {
 function setGradient(fill, style) {
   var gradientType = getGradientType(fill, style);
   var prefix = "";
-  var gradients = "";
   var needToFlip = false;
   var offset = 0;
 
@@ -17541,13 +17544,16 @@ function setGradient(fill, style) {
   }
 
   var stops = getGradientStops(gradientType.stopsArray, offset, gradientType.gradientOpacity, needToFlip);
-  gradients += prefix + stops + ", ";
+  return setGradients(stops, prefix, gradientType);
+}
+
+function setGradients(stops, prefix, gradientType) {
+  var gradients = prefix + stops + ", ";
 
   if (gradientType.type == 2) {
-    gradients = gradients.slice(0, -3) + ", ";
+    gradients += gradients.slice(0, -3) + ", ";
     gradients += getGradientStops([gradientType.stopsArray[0]]);
-    gradients = gradients.slice(0, gradients.lastIndexOf(")"));
-    gradients = gradients.slice(0, gradients.lastIndexOf(")"));
+    gradients += gradients.slice(0, gradients.lastIndexOf(")"));
     gradients += ") 100%), ";
   }
 
@@ -17555,10 +17561,10 @@ function setGradient(fill, style) {
 }
 
 function getGradientType(fill, style) {
-  var stopsArray = fill.gradient().stops();
-  stopsArray = _.sortBy(stopsArray, [function (style) {
+  var stopsArray = _.sortBy(fill.gradient().stops(), [function (style) {
     return style.position();
   }], ["desc"]);
+
   var gradientOpacity = 1;
 
   if (fill.contextSettings()) {
@@ -17640,8 +17646,7 @@ function getGradientStops(stops, offset, gradientOpacity, needToFlip) {
     result = result + rgba + " " + position + "%, ";
   });
 
-  result = result.slice(0, -2) + ")";
-  return result;
+  return result.slice(0, -2) + ")";
 }
 
 /***/ }),
@@ -18346,26 +18351,25 @@ module.exports = {
 };
 
 function getShadows(styles) {
-  var result = "";
   var theShadows = styles.shadows();
   var theShadows = theShadows.reverse();
 
-  _.forEach(theShadows, function (style) {
+  var shadowValueResult = _.reduce(theShadows, function (result, style) {
     if (style.isEnabled()) {
-      result += constructShadowValue(style);
+      return result + constructShadowValue(style);
     }
-  });
+  }, "");
 
   var theInnerShadows = styles.innerShadows();
   theInnerShadows = theInnerShadows.reverse();
 
-  _.forEach(theInnerShadows, function (style) {
+  var shadowResult = _.reduce(theInnerShadows, function (result, style) {
     if (style.isEnabled()) {
-      result += constructShadowValue(style, "inset");
+      return result + constructShadowValue(style, "inset");
     }
-  });
+  }, shadowValueResult);
 
-  return result.slice(0, -2);
+  return shadowResult.slice(0, -2);
 }
 
 function constructShadowValue(style, inset) {

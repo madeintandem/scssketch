@@ -80,9 +80,9 @@ function setGradient(fill, style) {
 }
 
 function setGradients(stops, prefix, gradientType) {
-  var gradients += prefix + stops + ", "
+  var gradients = prefix + stops + ", "
   if (gradientType.type == 2) {
-    gradients = gradients.slice(0, -3) + ", "
+    gradients += gradients.slice(0, -3) + ", "
     gradients += getGradientStops([gradientType.stopsArray[0]])
     gradients += gradients.slice(0, gradients.lastIndexOf(")"))
     gradients += ") 100%), "
