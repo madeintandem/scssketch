@@ -53,8 +53,9 @@ function getShadows(styles) {
       return result + constructShadowValue(style, "inset")
     }  
   }, shadowValueResult)
-  
-  return shadowResult.slice(0,-2)
+  // TODO: @Drew just ran into a scenario that this is null
+  // I am using the plugin for the designs that Elizabeth created for "what's for lunch"
+  if(typeof lastname !== "undefined") return shadowResult.slice(0,-2)
 }
 
 function constructShadowValue(style, inset) {
