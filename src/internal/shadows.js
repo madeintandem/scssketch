@@ -23,6 +23,7 @@ module.exports = {
   },
   
   writeShadows: (shadows) => {
+    log(shadows)
     var styles = ""
     if (shadows.length) {
       styles = styles + "// SHADOWS\n"
@@ -36,26 +37,20 @@ module.exports = {
 }
 
 function getShadows(styles) {
-  var theShadows = styles.shadows();
-  var theShadows = theShadows.reverse();
-  
-  var shadowValueResult = _.reduce(theShadows, (result, style) => {
+  var result = ""
+  var theShadows = styles.shadows().reverse();
+  _.forEach(theShadows, (style) => {
     if (style.isEnabled()) {
-      return result + constructShadowValue(style)
+      result += constructShadowValue(style)
     }
-  }, "")
-
-  var theInnerShadows = styles.innerShadows();
-  theInnerShadows = theInnerShadows.reverse();
-
-  var shadowResult = _.reduce(theInnerShadows, (result, style) => {
+  })
+  var theInnerShadows = styles.innerShadows().reverse();
+  _.forEach(theInnerShadows, (style) => {
     if (style.isEnabled()) {
-      return result + constructShadowValue(style, "inset")
-    }  
-  }, shadowValueResult)
-  // TODO: @Drew just ran into a scenario that this is null
-  // I am using the plugin for the designs that Elizabeth created for "what's for lunch"
-  if(typeof lastname !== "undefined") return shadowResult.slice(0,-2)
+      result += constructShadowValue(style, "inset")
+    }
+  })
+  return result.slice(0,-2)
 }
 
 function constructShadowValue(style, inset) {

@@ -31,6 +31,7 @@ module.exports = {
   },
   
   writeGradients: (gradients) => {
+    log(gradients)
     var styles = ""
     if (gradients.length) {
       styles = styles + "// GRADIENTS\n"
