@@ -17,7 +17,6 @@ module.exports = {
           gradients += setGradient(fill, style)
         }
       })
-
       gradients = gradients.slice(0, -2);
       var thisName = String(style.name())
       var tag = common.getTag(thisName)
@@ -25,13 +24,11 @@ module.exports = {
         thisName = tag.name.trim()
       }
       gradientsArray.push({"name": _.kebabCase(thisName), "gradient": gradients})
-
       return gradientsArray
     }, [])  
   },
   
   writeGradients: (gradients) => {
-    log(gradients)
     var styles = ""
     if (gradients.length) {
       styles = styles + "// GRADIENTS\n"
@@ -57,7 +54,6 @@ function setGradient(fill, style) {
   var prefix = ""
   var needToFlip = false
   var offset = 0
-  
   if (gradientType.type == 0) {
     angle = getAngle(fill)
     if(angle != 0) {
@@ -83,9 +79,10 @@ function setGradient(fill, style) {
 function setGradients(stops, prefix, gradientType) {
   var gradients = prefix + stops + ", "
   if (gradientType.type == 2) {
-    gradients += gradients.slice(0, -3) + ", "
+    gradients = gradients.slice(0, -3) + ", "
     gradients += getGradientStops([gradientType.stopsArray[0]])
-    gradients += gradients.slice(0, gradients.lastIndexOf(")"))
+    gradients = gradients.slice(0, gradients.lastIndexOf(")"))
+    gradients = gradients.slice(0, gradients.lastIndexOf(")"))
     gradients += ") 100%), "
   }
   
@@ -117,7 +114,7 @@ function getAngle(fill) {
   var rad = Math.atan2(deltaY, deltaX); // In radians
   var deg = rad * (180 / Math.PI)
 
-  //subtract 90 because of sketch
+  // add 90 because of sketch, round to tenth
   return Math.round((deg + 90) * 10) / 10;
 }
 
