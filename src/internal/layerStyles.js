@@ -7,15 +7,10 @@ const gradients = require("./gradients");
 module.exports = {
   parse: (sharedStyles) => {    
     var sortedStyles = _.sortBy(sharedStyles.objects(), [style => style.name()], ["desc"])
-    
     var shadowStyles = _.filter(sortedStyles, (style) => { return shadows.isShadow(style) })
-
     var otherStyles = _.differenceWith(sortedStyles, shadowStyles, _.isEqual)
-
     var gradientStyles = _.filter(otherStyles, (style) => { return gradients.isGradient(style) })
-
     otherStyles = _.differenceWith(otherStyles, gradientStyles, _.isEqual)
-    
     var colorStyles = _.filter(otherStyles, (style) => { return colors.isColor(style) })
 
     return {

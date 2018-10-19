@@ -23,6 +23,7 @@ module.exports = {
   },
   
   writeShadows: (shadows) => {
+    log(shadows)
     var styles = ""
     if (shadows.length) {
       styles = styles + "// SHADOWS\n"
@@ -37,15 +38,13 @@ module.exports = {
 
 function getShadows(styles) {
   var result = ""
-  var theShadows = styles.shadows();
-  var theShadows = theShadows.reverse();
+  var theShadows = styles.shadows().reverse();
   _.forEach(theShadows, (style) => {
     if (style.isEnabled()) {
       result += constructShadowValue(style)
     }
   })
-  var theInnerShadows = styles.innerShadows();
-  theInnerShadows = theInnerShadows.reverse();
+  var theInnerShadows = styles.innerShadows().reverse();
   _.forEach(theInnerShadows, (style) => {
     if (style.isEnabled()) {
       result += constructShadowValue(style, "inset")
