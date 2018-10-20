@@ -21,7 +21,6 @@ module.exports = {
     return getElementAttributes(buttonSymbols, sharedStyles, sharedTextStyles, layerStyles)
   },
   writeSass: (styles) => {
-    // TODO: Actually write out CSS
     var css = "";
     _.forEach(styles, (style) => {
       css += "// " + style.name + "\n"
@@ -40,16 +39,25 @@ module.exports = {
 
       var borderWidth = "";
       _.forEach(style.attributes.borderThickness, (val) => {
-        borderWidth += val + "px, "
+        borderWidth += val + "px "
       })
-      borderWidth = borderWidth.slice(0,-2)
+      borderWidth = borderWidth.slice(0,-1)
       css += "  border-width: " + borderWidth + ";\n"
+
+
+      var borderRadius = "";
+      _.forEach(style.attributes.borderRadius, (val) => {
+        borderRadius += val + "px "
+      })
+      borderRadius = borderRadius.slice(0,-1)
+      css += "  border-radius: " + borderRadius + ";\n"
+
 
       var paddingValue = "";
       _.forEach(style.attributes.padding, (val, i) => {
-        paddingValue += (val - style.attributes.borderThickness[i]) + "px, "
+        paddingValue += (val - style.attributes.borderThickness[i]) + "px "
       })
-      paddingValue = paddingValue.slice(0,-2)
+      paddingValue = paddingValue.slice(0,-1)
 
       css += "  padding: " + paddingValue + ";\n"
       css += "}\n\n"
@@ -153,7 +161,6 @@ function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerSt
         if (String(getText.class()).toLowerCase().indexOf("symbol") >= 0) {
           // get the offsets
           var symbolHeight = parseInt(getText.frame().height())
-          log(symbolHeight)
           getText = findSymbolById(getText.symbolID()).layers()[0]
           symbolTopOffset = getText.frame().y();
         }
@@ -163,14 +170,8 @@ function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerSt
           parseInt(element.frame().height()) - (parseInt(getText.frame().height()) + topPadding + symbolTopOffset),
           rightPadding
         ]
-
       }
-
-
-
     }
-    log(element.name())
-    log(elementAttributes)
     results.push({"name": String(element.name()), "attributes": elementAttributes})
   })
   return results;
