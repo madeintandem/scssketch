@@ -1,8 +1,11 @@
 export default function(context) {
   const layerStyles = require("./internal/layerStyles");
   const layerTextStyles = require("./internal/layerTextStyles");
+  const formElements = require("./internal/formElements")
+
   const sketch = context.api()
   const document = sketch.selectedDocument
+
   const sharedStyles = document.sketchObject.documentData().layerStyles()
   const sharedTextStyles = document.sketchObject.documentData().layerTextStyles()
   const layerStyleMap = layerStyles.parse(sharedStyles)
@@ -12,8 +15,11 @@ export default function(context) {
   const fonts = layerTextStyles.determineFontType(fontsUsed)
   const layerTextStyleMap = layerTextStyles.parse(sharedTextStyles)
   const layerTextStyleSheet = layerTextStyles.writeSass(layerTextStyleMap, fonts)
-  
-  var scss = "" + layerStyleSheet + layerTextStyleSheet
+
+  const formElementMap = formElements.parse(sharedStyles, sharedTextStyles, layerStyleMap)
+  const formElementStyleSheet = formElements.writeSass(formElementMap)
+
+  var scss = "" + layerStyleSheet + layerTextStyleSheet + formElementStyleSheet
   saveScssToFile(scss)
 }
 
