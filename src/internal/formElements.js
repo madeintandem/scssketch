@@ -53,7 +53,7 @@ function addBorderPropertyToCss(collection, property) {
   _.forEach(collection, (val) => {
     prop += val + "px "
   })
-  return ` ${property}: ` + prop.slice(0,-1) + ";\n"
+  return `  ${property}: ` + prop.slice(0,-1) + ";\n"
 }
 
 function addPaddingValuetoCss(style) {
@@ -62,7 +62,7 @@ function addPaddingValuetoCss(style) {
   _.forEach(padding, (val, i) => {
     paddingValue += (val - style.attributes.borderThickness[i]) + "px "
   })
-  return "  padding: " + paddingValue.slice(0,-1) + ";\n"
+  return "  padding: " + paddingValue.trim() + ";\n"
 }
 
 function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerStyles) {
