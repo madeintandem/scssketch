@@ -20,7 +20,7 @@ export default function(context) {
   const formElementStyleSheet = formElements.writeSass(formElementMap)
 
   var scss = "" + layerStyleSheet + layerTextStyleSheet + formElementStyleSheet
-  saveScssToFile(scss)
+  saveScssToFile(scss.trim())
 }
 
 function saveScssToFile(fileData) {

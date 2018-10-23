@@ -9,6 +9,7 @@ const symbolsPage = _.find(pages, (page) => {
 
 module.exports = {
   parse: (sharedStyles, sharedTextStyles, layerStyles) => {
+    var result = [];
     if (!symbolsPage) {
       console.log("There is no symbols page.")
       return false
@@ -18,7 +19,17 @@ module.exports = {
     var buttonSymbols = _.filter(symbolsPage.layers(), (layer) =>{
       return (String(layer.name()).toLowerCase().startsWith("button"))
     })
-    return getElementAttributes(buttonSymbols, sharedStyles, sharedTextStyles, layerStyles)
+    result = result.concat(getElementAttributes("button", buttonSymbols, sharedStyles, sharedTextStyles, layerStyles))
+    
+    // get text inputs
+    var textInputs = _.filter(symbolsPage.layers(), (layer) =>{
+      return (String(layer.name()).toLowerCase().startsWith("text input"))
+    })
+    result = result.concat(getElementAttributes("textInput", textInputs, sharedStyles, sharedTextStyles, layerStyles))
+    
+
+
+    return result
   },
   
   writeSass: (styles) => {
@@ -33,7 +44,7 @@ module.exports = {
       }
       css += "  @include  " + style.attributes.textStyle + ";\n"
       css += "  color: " + style.attributes.textColor + ";\n"
-      css += "  text-alignment: " + style.attributes.textAlignment + ";\n"
+      css += "  text-align: " + style.attributes.textAlignment + ";\n"
       css += "  background: " + style.attributes.background + ";\n"
       css += "  border-style: solid;\n"
       css += "  border-color: " + style.attributes.borderColor + ";\n"
@@ -41,6 +52,9 @@ module.exports = {
       css += addBorderPropertyToCss(style.attributes.borderThickness, "border-width")
       css += addBorderPropertyToCss(style.attributes.borderRadius, "border-radius")
       css += addPaddingValuetoCss(style)
+      if (style.attributes.shadow) {
+        css += "  box-shadow: " + style.attributes.shadow + ";\n"
+      }
 
       css += "}\n\n"
     })
@@ -53,7 +67,10 @@ function addBorderPropertyToCss(collection, property) {
   _.forEach(collection, (val) => {
     prop += val + "px "
   })
-  return `  ${property}: ` + prop.slice(0,-1) + ";\n"
+  if (collection.every( (val, i) => val === collection[0])) {
+    prop = collection[0] + "px";
+  }
+  return `  ${property}: ` + prop.trim() + ";\n"
 }
 
 function addPaddingValuetoCss(style) {
@@ -62,10 +79,14 @@ function addPaddingValuetoCss(style) {
   _.forEach(padding, (val, i) => {
     paddingValue += (val - style.attributes.borderThickness[i]) + "px "
   })
+  if (padding && padding.every( (val, i) => val === padding[0])) {
+    paddingValue = padding[0] + "px";
+  }
   return "  padding: " + paddingValue.trim() + ";\n"
 }
 
-function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerStyles) {
+function getElementAttributes (elementType, elements, sharedStyles, sharedTextStyles, layerStyles) {
+  var elements = _.sortBy(elements, [element => element.name()], ["desc"])
   var results = []
   _.forEach(elements, (element) => {
     var elementAttributes = {
@@ -74,9 +95,32 @@ function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerSt
       "borderThickness": null,
       "borderColor": "transparent",
       "background": null,
+      "shadow": null
+    }
+    var searchReferenceElement = element
+    // check for group
+    if (String(element.layers()[0].class()).toLowerCase().indexOf("group") >= 0) {
+      var shadow;
+      var group = element.layers()[0]
+      if (group.sharedStyleID()) {
+        // we have a shadow layer style, pls retrieve
+        var shadow = _.find(sharedStyles.objects(), (style) => {
+          return String(style.objectID()) === String(group.sharedStyleID())
+        })
+        if (shadow && shadow.name()) {
+        shadow = String(shadow.name())
+          var tag = common.getTag(shadow)
+          if (tag.isTag) {
+            shadow = tag.name.trim()
+          }
+          shadow = "$" + _.kebabCase(shadow)
+        }
+      }
+      elementAttributes.shadow = shadow
+      searchReferenceElement = element.layers()[0]    
     }
 
-    var shape = _.find(element.layers(), (layer) => {
+    var shape = _.find(searchReferenceElement.layers(), (layer) => {
       return String(layer.name()).toLowerCase() === "shape"
     })
 
@@ -86,16 +130,16 @@ function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerSt
     }
 
     // Check for text layer
-    var textLayer = _.find(element.layers(), (layer) => {
-      return (String(layer.name()).toLowerCase() === "label" ||
-        String(layer.name()).toLowerCase() === "value")
+    var textLayer = _.find(searchReferenceElement.layers(), (layer) => {
+      var layerName = String(layer.name()).toLowerCase()
+      return (layerName.indexOf("label") >= 0 || layerName.indexOf("value") >= 0)
     })
     if (!textLayer) {
       elementAttributes.width = parseInt(element.frame().width())
     } else {
-      elementAttributes = setTextLayerElementAttributes(textLayer, layerStyles, element, sharedTextStyles, elementAttributes)
+      elementAttributes = setTextLayerElementAttributes(textLayer, layerStyles, searchReferenceElement, sharedTextStyles, elementAttributes)
     }
-    results.push({"name": String(element.name()), "attributes": elementAttributes})
+    results.push({"name": String(element.name()), "elementType": elementType, "attributes": elementAttributes})
   })
   
   return results
@@ -103,8 +147,14 @@ function getElementAttributes (elements, sharedStyles, sharedTextStyles, layerSt
 
 function setTextLayerElementAttributes(textLayer, layerStyles, element, sharedTextStyles, elementAttributes) {
   var elementAttr = elementAttributes
+  var symbolAlpha = 1;
+  var textAlpha = 1;
+  var shadow = "!do-nothing";
+
+
   // check for symbol
   if (String(textLayer.class()).toLowerCase().indexOf("symbol") >= 0) {
+    symbolAlpha = parseFloat(textLayer.style().contextSettings().opacity());
     textLayer = findSymbolById(textLayer.symbolID()).layers()[0]
   }
   // check for text style
@@ -113,6 +163,7 @@ function setTextLayerElementAttributes(textLayer, layerStyles, element, sharedTe
   })
     
   if (textStyle) {
+    textAlpha = parseFloat(textLayer.style().contextSettings().opacity());
     var tag = common.getTag(textStyle.name())
     elementAttr.textStyle = tag.cssSelector + "-text-style"
   }
@@ -120,6 +171,9 @@ function setTextLayerElementAttributes(textLayer, layerStyles, element, sharedTe
   // get color
   var fontColor = "#" + String(textLayer.textColor().immutableModelObject().hexValue())
   fontColor = findLayerStyleByColor(fontColor, layerStyles.colors)
+  if (textAlpha * symbolAlpha < 1) {
+    fontColor = "rgba(" + fontColor + ", " + (Math.round(textAlpha * symbolAlpha * 100) / 100) + ")"
+  }
   elementAttr.textColor = fontColor
 
   // get alignment

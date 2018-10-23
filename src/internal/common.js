@@ -1,3 +1,6 @@
+const defaultBaseFontSize = 16;
+var mobileBaseFontSize = defaultBaseFontSize;
+var desktopBaseFontSize = defaultBaseFontSize;
 module.exports = {
   
   getTag: (name) => {  
@@ -50,7 +53,26 @@ module.exports = {
       }
     })
     return rgba.slice(0, -2) + ")"
-  }
+  },
+  getDefaultBaseFontSize: () => {
+    return defaultBaseFontSize
+  },
+  getMobileBaseFontSize: () => {
+    return mobileBaseFontSize
+  },
+  getDesktopBaseFontSize: () => {
+    return desktopBaseFontSize
+  },
+  setMobileBaseFontSize: (size) => {
+    mobileBaseFontSize = size
+  },
+  setDesktopBaseFontSize: (size) => {
+    desktopBaseFontSize = size
+  },
+  pixelsToRem: (pixelValue, baseSize) => {
+    return Math.round((pixelValue / baseSize) * 1000) / 1000
+  },
+
 }
 
 function removeZeros(str){

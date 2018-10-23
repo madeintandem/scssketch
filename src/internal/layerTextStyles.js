@@ -6,8 +6,6 @@ const common = require("./common");
 var useRem = true;
 var defaultBaseFontSize = 16;
 var breakpointVariable = "$breakpoint";
-var mobileBaseFontSize = defaultBaseFontSize;
-var desktopBaseFontSize = defaultBaseFontSize;
 var outputFontWeight = true;
 
 module.exports = {
@@ -153,17 +151,17 @@ function setBaseFontSize (mobileRamp, desktopRamp) {
   var output = "";
   if (useRem) {
     if (mobileRamp.hasParagraph) {
-      mobileBaseFontSize = mobileRamp.styles[0].size
+      common.setMobileBaseFontSize(mobileRamp.styles[0].size)
     }
     if (desktopRamp && desktopRamp.hasParagraph) {
-      desktopBaseFontSize = desktopRamp.styles[0].size
+      common.setDesktopBaseFontSize(desktopRamp.styles[0].size)
     }
     var output = "\n// BASE FONT SIZE\n@mixin baseFontSize {\n"
     // mobile base font size
-    output += "  font-size: " + Math.round(mobileBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
+    output += "  font-size: " + Math.round(common.getMobileBaseFontSize() / common.getDefaultBaseFontSize() * 100) + "%;\n"
     output += "  @media screen and (min-width: " + breakpointVariable + ") {\n"
     output += "  & {\n"
-    output += "    font-size: " + Math.round(desktopBaseFontSize / defaultBaseFontSize * 100) + "%;\n"
+    output += "    font-size: " + Math.round(common.getDesktopBaseFontSize() / common.getDefaultBaseFontSize() * 100) + "%;\n"
     output += "    }\n"
     output += "  }\n"
     output += "}\n\n"
@@ -306,10 +304,10 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
         desktopTag.tag = _.kebabCase(desktopTag.tag).toLowerCase();
       }
 
-      output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+      output += outputSetupVars(thisStyle, common.getMobileBaseFontSize(), fonts)
 
       // if desktop, set desktop vars
-      output += outputSetupVars(thisDesktopStyle, desktopBaseFontSize, fonts)
+      output += outputSetupVars(thisDesktopStyle, common.getDesktopBaseFontSize(), fonts)
       isResponsive = true
     }
     // give me those sweet sweet mixins
@@ -323,7 +321,7 @@ function writeTypeStyles(fonts, mobileTypeRamp, desktopTypeRamp) {
     }
     output += "// " + styleName + "\n";
 
-    output += outputSetupVars(thisStyle, mobileBaseFontSize, fonts)
+    output += outputSetupVars(thisStyle, common.getMobileBaseFontSize(), fonts)
     output += outputMixin(tag, 0, false)
   })
   return output;
@@ -349,12 +347,12 @@ function outputSetupVars(style, baseSize, fonts) {
   }
   fontSize = style.size + "px"
   if (useRem) {
-    fontSize = Math.round((style.size / baseSize) * 1000) / 1000 + "rem"
+    fontSize = common.pixelsToRem(style.size, baseSize) + "rem"
   }
   output += pre + "-font-size: " + fontSize + ";\n";
   var letterSpacing = parseFloat(style.spacing) + "px;\n";
   if (useRem) {
-    letterSpacing = Math.round((parseFloat(style.spacing) / baseSize) * 100) / 100 + "rem;\n";
+    letterSpacing = common.pixelsToRem(style.spacing, baseSize) + "rem;\n";
     }
   output += pre + "-letter-spacing: " + letterSpacing;
 
@@ -381,7 +379,7 @@ function outputSetupVars(style, baseSize, fonts) {
   if (style.paragraphSpacing > 0) {
     marginValue = "0 0 " + style.paragraphSpacing + "px 0";
     if (useRem) {
-      marginValue = "0 0 " + Math.round((style.paragraphSpacing / baseSize) * 100) / 100 + "rem 0";
+      marginValue = "0 0 " + common.pixelsToRem(style.paragraphSpacing, baseSize) + "rem 0";
     }
   }
   output += pre + "-margin: " + marginValue + ";\n"

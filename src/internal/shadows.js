@@ -7,7 +7,7 @@ module.exports = {
   },
   
   addShadows: (shadowStyles) => {
-    return _.reduce(shadowStyles, (shaddows, style) => {
+    return _.reduce(shadowStyles, (shadows, style) => {
               var thisName = String(style.name())
               var tag = common.getTag(thisName)
               if (tag.isTag) {
@@ -17,13 +17,12 @@ module.exports = {
                 name: _.kebabCase(thisName),
                 value: getShadows(style.value())
               }
-              shaddows.push(tmp)      
-              return shaddows
+              shadows.push(tmp)      
+              return shadows
             }, [])
   },
   
   writeShadows: (shadows) => {
-    log(shadows)
     var styles = ""
     if (shadows.length) {
       styles = styles + "// SHADOWS\n"
