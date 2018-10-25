@@ -37,24 +37,35 @@ module.exports = {
     _.forEach(styles, (style) => {
       css += "// " + style.name + "\n"
       css += "@mixin " + _.kebabCase(style.name) + " {\n"
-      css += "  box-sizing: border-box;\n"
-      css += "  height: " + style.attributes.height + "px;\n"
-      if (style.attributes.width) {
-        css += "  width: " + style.attributes.width + "px;\n"
+
+      if ((style.elementType == "textInput" ||
+        style.elementType == "textArea") &&
+        (style.name.toLowerCase().endsWith("placeholder") ||
+          style.name.toLowerCase().endsWith("empty"))) {
+
+        css += "  opacity: 1;\n"
+      } else {
+        css += "  box-sizing: border-box;\n"
+        if (style.elementType != "textArea") {
+          css += "  height: " + style.attributes.height + "px;\n"
+        }
+        if (style.attributes.width) {
+          css += "  width: " + style.attributes.width + "px;\n"
+        }
+        css += "  background: " + style.attributes.background + ";\n"
+        css += "  border-style: solid;\n"
+        css += "  border-color: " + style.attributes.borderColor + ";\n"
+        css += addBorderPropertyToCss(style.attributes.borderThickness, "border-width")
+        css += addBorderPropertyToCss(style.attributes.borderRadius, "border-radius")
+        css += addPaddingValuetoCss(style)
+        if (style.attributes.shadow) {
+          css += "  box-shadow: " + style.attributes.shadow + ";\n"
+        }
       }
       css += "  @include  " + style.attributes.textStyle + ";\n"
       css += "  color: " + style.attributes.textColor + ";\n"
       css += "  text-align: " + style.attributes.textAlignment + ";\n"
-      css += "  background: " + style.attributes.background + ";\n"
-      css += "  border-style: solid;\n"
-      css += "  border-color: " + style.attributes.borderColor + ";\n"
 
-      css += addBorderPropertyToCss(style.attributes.borderThickness, "border-width")
-      css += addBorderPropertyToCss(style.attributes.borderRadius, "border-radius")
-      css += addPaddingValuetoCss(style)
-      if (style.attributes.shadow) {
-        css += "  box-shadow: " + style.attributes.shadow + ";\n"
-      }
 
       css += "}\n\n"
     })
